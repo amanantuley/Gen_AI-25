@@ -83,14 +83,14 @@ function Home() {
               Jams
             </h2>
             <h2 className="text-3xl lg:text-7xl font-bold text-yellow-500 inline-block">
-              2024
+              2025
             </h2>
           </div>
           <p className="mt-3 lg:mt-5 text-gray-500 text-xl">
             This is an institute level rankings leaderboard for <br />
-            <b>Google GenAI Study Jams 2024</b> of <b>GDGC AIKTC</b> <br />
+            <b>Google GenAI Study Jams 2025</b> of <b>GDGC AIKTC</b> <br />
             <p className="text-gray-500 text-lg">
-              Updated as of <span className="underline">21th November 2024</span>
+              Updated as of <span className="underline">6th October 2025</span>
             </p>
           </p>
           <p className="mt-3 lg:mt-5 text-gray-500 text-xl">
