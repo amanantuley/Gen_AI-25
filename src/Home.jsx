@@ -104,13 +104,13 @@ function Home() {
               <div className="p-5 relative flex transform items-center justify-center border-2 border-yellow-500 rounded-md bg-white transition-transform group-hover:-translate-x-2 group-hover:-translate-y-2">
                 <div className=" !pt-0 transition-opacity group-hover:absolute group-hover:opacity-0 ">
                   <h2 className="title-font font-medium text-3xl text-yellow-500 ">
-                    120
+                    100
                   </h2>
                   <p className="leading-relaxed">Eligible Participants</p>
                 </div>
                 <div className="absolute opacity-0 transition-opacity group-hover:relative group-hover:opacity-100">
                   <h2 className="title-font font-medium text-3xl text-yellow-500 ">
-                    120
+                    252
                   </h2>
                   <p className="leading-relaxed">Eligible Participants</p>
                 </div>
@@ -121,13 +121,13 @@ function Home() {
               <div className="p-5 relative flex transform items-center justify-center border-2 border-red-600 rounded-md bg-white transition-transform group-hover:-translate-x-2 group-hover:-translate-y-2">
                 <div className=" !pt-0 transition-opacity group-hover:absolute group-hover:opacity-0 ">
                   <h2 className="title-font font-medium text-3xl text-red-500">
-                    183
+                    252
                   </h2>
                   <p className="leading-relaxed">Participants Registered</p>
                 </div>
                 <div className="absolute opacity-0 transition-opacity group-hover:relative group-hover:opacity-100">
                   <h2 className="title-font font-medium text-3xl text-red-500">
-                    183
+                    252
                   </h2>
                   <p className="leading-relaxed">Participants Registered</p>
                 </div>
