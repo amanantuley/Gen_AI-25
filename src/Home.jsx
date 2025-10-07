@@ -518,7 +518,7 @@ export default function Home() {
         <footer className="mt-12 py-8 border-t border-gray-700/20 text-center text-sm opacity-80">
           © 2025 GDGC AIKTC · Built with ❤️ ·{" "}
           <a className="underline" href="https://studyjams.netlify.app/" target="_blank" rel="noreferrer">Study Jams tutorials</a>
-          <div className="mt-2">Version 4.0 — Animations + Top performers + All participants on single page</div>
+          <div className="mt-2">Version 4.0</div>
         </footer>
       </main>
 
