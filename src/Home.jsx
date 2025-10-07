@@ -370,7 +370,7 @@ export default function Home() {
             Welcome to <span className="text-blue-400">GenAI Study Jams 2025</span>
           </h1>
           <p className="mt-3 text-sm sm:text-base text-gray-400 max-w-2xl mx-auto px-2">
-            Institute-level leaderboard for GDGC AIKTC. Track badges, arcade games and completion status. Updated live from the CSV.
+            Institute-level leaderboard for GDGC AIKTC. Track badges, arcade games and completion status. Updated as of 8 October 2025.
           </p>
 
           {/* Stats */}
@@ -517,7 +517,7 @@ export default function Home() {
         {/* Footer */}
         <footer className="mt-12 py-8 border-t border-gray-700/20 text-center text-sm opacity-80">
           © 2025 GDGC AIKTC · Built with ❤️ ·{" "}
-          <a className="underline" href="https://studyjams.netlify.app/" target="_blank" rel="noreferrer">Study Jams tutorials</a>
+          <a className="underline" href="https://studyjams.netlify.app/" target="_blank" rel="noreferrer">Study Jams tutorials</a>=
           <div className="mt-2">Version 4.0</div>
         </footer>
       </main>
