@@ -1,310 +1,541 @@
-import { useState, useEffect } from "react";
+// Home.jsx
+import { useState, useEffect, useMemo, useRef } from "react";
 import Papa from "papaparse";
-
-import "./home.css";
+import { motion, AnimatePresence } from "framer-motion";
+import AOS from "aos";
+import "aos/dist/aos.css";
+import { FiSun, FiMoon, FiChevronUp, FiSearch, FiRefreshCw } from "react-icons/fi";
+import { GiLaurelCrown } from "react-icons/gi";
 import Logo from "./assets/logo.svg";
+import "./home.css"; // keep your existing CSS, add styles there if needed
 
-function Home() {
-  const [leaderboardData, setLeaderboardData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [totalCompleted, setTotalCompleted] = useState(0);
+/* ============================
+   Utilities
+   ============================ */
 
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
+
+function useDebounced(value, delay = 250) {
+  const [debounced, setDebounced] = useState(value);
   useEffect(() => {
-    Papa.parse("./leaderboard.csv", {
-      download: true,
-      header: true,
-      complete: (result) => {
-        const data = result.data.map((row) => {
-          const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10);
-          const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10);
-          const totalItems = 16;
-          const percentage = ((badgesCompleted + gamesCompleted) / totalItems) * 100;
+    const t = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(t);
+  }, [value, delay]);
+  return debounced;
+}
 
-          return {
-            ...row,
-            badgesCompleted,
-            gamesCompleted,
-            percentage,
-            rank: 0
-          };
-        });
+/* ============================
+   Small UI atoms & components
+   ============================ */
 
-        setTotalCompleted(0);
-        data.sort((a, b) => b.percentage - a.percentage);
-        data.forEach((row, index) => {
-          row.rank = index + 1;
-
-          if (row["All Skill Badges & Games Completed"] === "Yes") {
-            setTotalCompleted((prev) => prev + 1);
-          }
-        });
-
-        setLeaderboardData(data);
-
-        if (data[data.length - 1]["User Name"] === "") {
-          data.pop();
-        }
-      },
-    });
-  }, []);
-
-  const filteredData = leaderboardData.filter((row) => {
+function BadgeYesNo({ value }) {
+  if (value === "Yes") {
     return (
-      row["User Name"]?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      row["User Email"]?.toLowerCase().includes(searchQuery.toLowerCase())
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
+        ✅ Yes
+      </span>
     );
-  });
-
+  }
+  if (!value || value === "0" || (value.toLowerCase && value.toLowerCase() === "no")) {
+    return (
+      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
+        ❌ No
+      </span>
+    );
+  }
   return (
-    <div className="overflow-hidden">
-      <header className="bg-white border-b sticky top-0 z-50">
-        <div className="mx-auto p-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-2">
-            <div className="md:flex md:items-center md:gap-12">
-              <a className="block text-teal-600" href="#">
-                <span className="sr-only">Home</span>
-                <img src={Logo} className="lg:h-24 h-20" />
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
-      <div className="px-6 pb-8 pt-16 mx-auto text-center pattern">
-        <div className="max-w-lg mx-auto pb-4">
-          <h1 className="text-2xl text-gray-500 lg:text-4xl">Welcome to</h1>
-          <div className="flex justify-center items-center whitespace-nowrap mt-1 lg:mt-2">
-            <h2 className="lg:mr-4 mr-2 lg:text-7xl text-3xl font-bold text-red-500 inline-block">
-              GenAI
-            </h2>
-            <h2 className="lg:mr-4 mr-2 lg:text-7xl text-3xl font-bold text-blue-600 inline-block">
-              Study
-            </h2>
-            <h2 className="lg:mr-4 mr-2 lg:text-7xl text-3xl font-bold text-green-600 inline-block">
-              Jams
-            </h2>
-            <h2 className="text-3xl lg:text-7xl font-bold text-yellow-500 inline-block">
-              2025
-            </h2>
-          </div>
-          <p className="mt-3 lg:mt-5 text-gray-500 text-xl">
-            This is an institute level rankings leaderboard for <br />
-            <b>Google GenAI Study Jams 2025</b> of <b>GDGC AIKTC</b> <br />
-            <p className="text-gray-500 text-lg">
-              Updated as of <span className="underline">7th October 2025</span>
-            </p>
-          </p>
-          <p className="mt-3 lg:mt-5 text-gray-500 text-xl">
-            Follow <a target="_blank" className="underline font-bold" href="https://studyjams.netlify.app/">this</a> link for tutorials on how to complete the labs
-          </p>
-        </div>
-        <div className="container mx-auto">
-          <div className="flex flex-wrap justify-center text-center">
-            <a href="#" className="group relative w-full lg:w-1/5 mx-0 my-4 lg:m-4 ">
-              <span className="p-5 absolute inset-0 border-2 border-dashed border-yellow-500 rounded-md"></span>
-              <div className="p-5 relative flex transform items-center justify-center border-2 border-yellow-500 rounded-md bg-white transition-transform group-hover:-translate-x-2 group-hover:-translate-y-2">
-                <div className=" !pt-0 transition-opacity group-hover:absolute group-hover:opacity-0 ">
-                  <h2 className="title-font font-medium text-3xl text-yellow-500 ">
-                    100
-                  </h2>
-                  <p className="leading-relaxed">Eligible Participants</p>
-                </div>
-                <div className="absolute opacity-0 transition-opacity group-hover:relative group-hover:opacity-100">
-                  <h2 className="title-font font-medium text-3xl text-yellow-500 ">
-                    100
-                  </h2>
-                  <p className="leading-relaxed">Eligible Participants</p>
-                </div>
-              </div>
-            </a>
-            <a href="#" className="group relative w-full lg:w-1/5 mx-0 my-4 lg:m-4 ">
-              <span className="p-5 absolute inset-0 border-2 border-dashed border-red-600 rounded-md"></span>
-              <div className="p-5 relative flex transform items-center justify-center border-2 border-red-600 rounded-md bg-white transition-transform group-hover:-translate-x-2 group-hover:-translate-y-2">
-                <div className=" !pt-0 transition-opacity group-hover:absolute group-hover:opacity-0 ">
-                  <h2 className="title-font font-medium text-3xl text-red-500">
-                    252
-                  </h2>
-                  <p className="leading-relaxed">Participants Registered</p>
-                </div>
-                <div className="absolute opacity-0 transition-opacity group-hover:relative group-hover:opacity-100">
-                  <h2 className="title-font font-medium text-3xl text-red-500">
-                    252
-                  </h2>
-                  <p className="leading-relaxed">Participants Registered</p>
-                </div>
-              </div>
-            </a>
-            <a href="#" className="group relative w-full lg:w-1/5 mx-0 my-4 lg:m-4 ">
-              <span className="p-5 absolute inset-0 border-2 border-dashed border-green-500 rounded-md"></span>
-              <div className="p-5 relative flex transform items-center justify-center border-2 border-green-500 rounded-md bg-white transition-transform group-hover:-translate-x-2 group-hover:-translate-y-2">
-                <div className="!pt-0 transition-opacity group-hover:absolute group-hover:opacity-0 ">
-                  <h2 className="title-font font-medium text-3xl text-green-500">
-                    {totalCompleted}
-                  </h2>
-                  <p className="leading-relaxed">Participants Qualified</p>
-                </div>
-                <div className="absolute opacity-0 transition-opacity group-hover:relative group-hover:opacity-100">
-                  <h2 className="title-font font-medium text-3xl text-green-500">
-                    {totalCompleted}
-                  </h2>
-                  <p className="leading-relaxed">Participants Qualified</p>
-                </div>
-              </div>
-            </a>
-          </div>
-        </div>
-        <div className="w-full lg:max-w-sm mx-auto mt-4 bg-white border rounded-md focus-within:border-blue-400 focus-within:ring focus-within:ring-blue-300 focus-within:ring-opacity-40">
-          <form className="flex flex-row">
-            <input
-              type="text"
-              placeholder="Enter your name or email..."
-              className="w-full flex-1 text-lg h-10 px-4 py-2 m-1 text-gray-700 placeholder-gray-400 bg-transparent border-none appearance-none focus:outline-none focus:placeholder-transparent focus:ring-0"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <div className="bg-blue-700 flex justify-center items-center rounded-md px-3 m-1">
-              <svg
-                className="h-5 w-5 text-white"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path
-                  d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                ></path>
-              </svg>
-            </div>
-          </form>
-        </div>
+    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+      {value}
+    </span>
+  );
+}
+
+/* Animated counter that counts up to `value` */
+function CountUp({ value = 0, duration = 900, className = "" }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    let start = 0;
+    const end = Number(value) || 0;
+    if (end === 0) {
+      setDisplay(0);
+      return;
+    }
+    const stepTime = Math.max(Math.floor(duration / end), 8);
+    const timer = setInterval(() => {
+      start += 1;
+      if (start >= end) {
+        clearInterval(timer);
+        setDisplay(end);
+      } else {
+        setDisplay(start);
+      }
+    }, stepTime);
+    return () => clearInterval(timer);
+  }, [value, duration]);
+
+  return <span className={className}>{display}</span>;
+}
+
+/* Progress bar with tooltip (simple) */
+function ProgressBar({ percentage = 0 }) {
+  const pct = clamp(Number(percentage) || 0, 0, 100);
+  return (
+    <div className="relative group" title={`${pct.toFixed(1)}% complete`}>
+      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="h-2 bg-gradient-to-r from-blue-500 to-indigo-500"
+        />
       </div>
-      <section className="px-4 pl-10 my-2 lg:px-4 lg:my-0 lg:overflow-hidden overflow-x-auto pattern">
-        <div className="flex flex-col mb-6">
-          <div className="-mx-4 sm:-mx-6 lg:-mx-8 ">
-            <div className="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8 mr-6 lg:mr-0">
-              <div className="overflow-hidden border border-gray-200 rounded-md">
-                <table className="table-fixed divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="w-1/8 px-4 py-3.5 font-semibold text-left rtl:text-right text-gray-500">
-                        Rank
-                      </th>
-                      <th scope="col" className="w-1/8 py-3.5 px-4 font-semibold text-left rtl:text-right text-gray-500">
-                        Name & Email
-                      </th>
-                      <th scope="col" className="w-1/8 px-4 py-3.5 font-semibold text-left rtl:text-right text-gray-500">
-                        Access Code Redemption Status
-                      </th>
-                      <th scope="col" className="w-1/8 px-4 py-3.5 font-semibold text-left rtl:text-right text-gray-500">
-                        Eligible for Rewards?
-                      </th>
-                      <th scope="col" className="w-1/8 px-4 py-3.5 font-semibold text-left rtl:text-right text-gray-500">
-                        No. of Skill Badges Completed
-                      </th>
-                      <th scope="col" className="w-1/8 px-4 py-3.5 font-semibold text-left rtl:text-right text-gray-500">
-                        All Arcade Game Completed?
-                      </th>
-                      <th scope="col" className="w-1/8 px-4 py-3.5 font-semibold text-left rtl:text-right text-gray-500">
-                        Completion Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200 w-full">
-                    {filteredData.length === 0 ? (
-                      <tr>
-                        <td colSpan="8" className="text-center text-lg py-4 text-gray-500 w-screen">
-                          Kindly check your name / email & try again
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredData.map((row, index) => (
-                        <tr key={index}>
-                          <td className="px-4 py-4 text-md font-bold whitespace-nowrap">
-                            <div>
-                              <h4 className="text-gray-700 pl-2">{row["rank"]}</h4>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-md font-medium whitespace-nowrap">
-                            <div>
-                              <h2 className="font-medium text-gray-800">
-                                {row["User Name"]}
-                              </h2>
-                              <p className="font-normal text-gray-600">
-                                {row["User Email"]}
-                              </p>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-md font-medium whitespace-nowrap">
-                            {
-                              row["Access Code Redemption Status"] === "Yes" ? (
-                                <div className="inline px-3 py-1 font-normal rounded-full text-green-500 bg-green-100/60">
-                                  {row["Access Code Redemption Status"]}
-                                </div>
-                              ) : (
-                                <div className="inline px-3 py-1 font-normal rounded-full text-red-500 bg-red-100/60">
-                                  {row["Access Code Redemption Status"]}
-                                </div>
-                              )
-                            }
-                          </td>
-                          <td className="px-4 py-4 text-md whitespace-nowrap">
-                            {
-                              row["All Skill Badges & Games Completed"] === "Yes" ? (
-                                <div className="inline px-3 py-1 font-normal rounded-full text-green-500 bg-green-100/60">
-                                  {row["All Skill Badges & Games Completed"]}
-                                </div>
-                              ) : (
-                                <div className="inline px-3 py-1 font-normal rounded-full text-red-500 bg-red-100/60">
-                                  {row["All Skill Badges & Games Completed"]}
-                                </div>
-                              )
-                            }
-                          </td>
-                          <td className="px-4 py-4 text-md whitespace-nowrap">
-                            <div>
-                              <h4 className="text-gray-700">
-                                {row["# of Skill Badges Completed"]}
-                              </h4>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div>
-                              <h4 className="text-gray-700">
-                                {
-                                  row["# of Arcade Games Completed"] === "0" ? (
-                                    <div className="inline px-3 py-1 font-normal rounded-full text-red-500 bg-red-100/60">
-                                      No
-                                    </div>
-                                  ) : (
-                                    <div className="inline px-3 py-1 font-normal rounded-full text-green-500 bg-green-100/60">
-                                      Yes
-                                    </div>
-                                  )
-                                }
-                              </h4>
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 text-md whitespace-nowrap">
-                            <div className="w-full h-1.5 bg-blue-200 overflow-hidden rounded-full">
-                              <div
-                                className="bg-blue-500 h-1.5"
-                                style={{ width: `${row["percentage"]}%` }}
-                              ></div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
 
-export default Home;
+/* Top 3 Card */
+function TopCard({ place = 1, user = {}, color = "yellow" }) {
+  const medal = place === 1 ? "🥇" : place === 2 ? "🥈" : "🥉";
+  const colors = {
+    yellow: "from-yellow-400 to-yellow-600",
+    red: "from-red-400 to-red-600",
+    green: "from-green-400 to-green-600",
+    blue: "from-blue-400 to-blue-600",
+  };
+  return (
+    <motion.div
+      whileHover={{ y: -6, scale: 1.02 }}
+      layout
+      className={`w-full max-w-xs sm:max-w-sm rounded-2xl shadow-xl p-5 bg-gradient-to-br ${colors[color]} text-white`}
+      aria-label={`Top performer #${place}`}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 rounded-full w-12 h-12 flex items-center justify-center text-2xl">{medal}</div>
+          <div className="min-w-0">
+            <div className="text-sm opacity-90">Rank #{place}</div>
+            <div className="text-lg font-bold truncate max-w-[160px]">{user["User Name"] || "—"}</div>
+            <div className="text-xs opacity-80 truncate max-w-[160px]">{user["User Email"] || ""}</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="text-xs opacity-90">Completion</div>
+          <div className="text-xl font-bold">{user.percentage ? `${Number(user.percentage).toFixed(0)}%` : "0%"}</div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ============================
+   Main Page Component
+   ============================ */
+
+export default function Home() {
+  // core data
+  const [leaderboardData, setLeaderboardData] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounced(searchQuery, 250);
+
+  // UI state
+  const [darkMode, setDarkMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem("gdgc_darkmode");
+      if (saved !== null) return saved === "true";
+      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    } catch (e) {
+      return true;
+    }
+  });
+  const [lastUpdated, setLastUpdated] = useState("");
+  const [showTop, setShowTop] = useState(true);
+  const [filterCompletedOnly, setFilterCompletedOnly] = useState(false);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(0); // seconds, 0 = off
+  const refreshTimerRef = useRef(null);
+
+  // misc refs
+  const tableRef = useRef(null);
+  const backToTopRef = useRef(null);
+
+  // initialize AOS animations
+  useEffect(() => {
+    AOS.init({ duration: 700, offset: 100, once: true });
+  }, []);
+
+  // persist theme
+  useEffect(() => {
+    try {
+      localStorage.setItem("gdgc_darkmode", darkMode ? "true" : "false");
+    } catch (e) {}
+    document.documentElement.classList.toggle("dark", darkMode);
+  }, [darkMode]);
+
+  // parse CSV
+  useEffect(() => {
+    let cancelled = false;
+    Papa.parse("./leaderboard.csv", {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => {
+        if (cancelled) return;
+        const mapped = result.data
+          .map((row) => {
+            const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10) || 0;
+            const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10) || 0;
+            const totalItems = 16;
+            const percentage = ((badgesCompleted + gamesCompleted) / totalItems) * 100;
+            return {
+              ...row,
+              badgesCompleted,
+              gamesCompleted,
+              percentage,
+            };
+          })
+          .filter((r) => r["User Name"] || r["User Email"]);
+
+        mapped.sort((a, b) => b.percentage - a.percentage);
+        mapped.forEach((row, idx) => (row.rank = idx + 1));
+
+        setLeaderboardData(mapped);
+        setLastUpdated(new Date().toLocaleString());
+      },
+      error: (err) => {
+        console.error("CSV parse error:", err);
+      },
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // auto refresh
+  useEffect(() => {
+    if (refreshTimerRef.current) {
+      clearInterval(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+    if (!autoRefreshInterval || autoRefreshInterval <= 0) return;
+    refreshTimerRef.current = setInterval(() => {
+      Papa.parse("./leaderboard.csv", {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: (result) => {
+          const mapped = result.data
+            .map((row) => {
+              const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10) || 0;
+              const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10) || 0;
+              const totalItems = 16;
+              const percentage = ((badgesCompleted + gamesCompleted) / totalItems) * 100;
+              return { ...row, badgesCompleted, gamesCompleted, percentage };
+            })
+            .filter((r) => r["User Name"] || r["User Email"]);
+
+          mapped.sort((a, b) => b.percentage - a.percentage);
+          mapped.forEach((row, idx) => (row.rank = idx + 1));
+          setLeaderboardData(mapped);
+          setLastUpdated(new Date().toLocaleString());
+        },
+      });
+    }, autoRefreshInterval * 1000);
+
+    return () => clearInterval(refreshTimerRef.current);
+  }, [autoRefreshInterval]);
+
+  // derived values
+  const totalParticipants = leaderboardData.length;
+  const totalCompleted = leaderboardData.filter((r) => r["All Skill Badges & Games Completed"] === "Yes").length;
+  const topThree = leaderboardData.slice(0, 3);
+  const filtered = useMemo(() => {
+    const q = (debouncedSearch || "").trim().toLowerCase();
+    return leaderboardData.filter((r) => {
+      if (filterCompletedOnly && r["All Skill Badges & Games Completed"] !== "Yes") return false;
+      if (!q) return true;
+      return (
+        (r["User Name"] || "").toLowerCase().includes(q) ||
+        (r["User Email"] || "").toLowerCase().includes(q) ||
+        String(r["rank"]).includes(q)
+      );
+    });
+  }, [leaderboardData, debouncedSearch, filterCompletedOnly]);
+
+  // Back-to-top show/hide
+  useEffect(() => {
+    const onScroll = () => {
+      if (window.scrollY > 400) {
+        backToTopRef.current?.classList.remove("opacity-0", "pointer-events-none");
+      } else {
+        backToTopRef.current?.classList.add("opacity-0", "pointer-events-none");
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // UI handlers
+  const handleRefreshNow = () => {
+    Papa.parse("./leaderboard.csv", {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => {
+        const mapped = result.data
+          .map((row) => {
+            const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10) || 0;
+            const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10) || 0;
+            const totalItems = 16;
+            const percentage = ((badgesCompleted + gamesCompleted) / totalItems) * 100;
+            return { ...row, badgesCompleted, gamesCompleted, percentage };
+          })
+          .filter((r) => r["User Name"] || r["User Email"]);
+
+        mapped.sort((a, b) => b.percentage - a.percentage);
+        mapped.forEach((row, idx) => (row.rank = idx + 1));
+        setLeaderboardData(mapped);
+        setLastUpdated(new Date().toLocaleString());
+      },
+    });
+  };
+
+  /* ============================
+     Render
+     ============================ */
+
+  return (
+    <div className={`min-h-screen ${darkMode ? "bg-gray-900 text-slate-100" : "bg-gray-50 text-slate-900"} transition-colors duration-300`}>
+      {/* Header */}
+      <header
+        className={`sticky top-0 z-50 backdrop-blur-md ${darkMode ? "bg-black/50 border-b border-gray-800" : "bg-white/80 border-b border-gray-200"}`}
+        style={{ WebkitBackdropFilter: "blur(6px)" }}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <img src={Logo} alt="logo" className="h-10 sm:h-12 w-auto" />
+            <div className="min-w-0">
+              <div className="text-base sm:text-lg font-bold truncate">GDGC-AIKTC · GenAI Study Jams 2025</div>
+              <div className="text-xs sm:text-sm opacity-70 truncate">Institute leaderboard & participant progress</div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center gap-3 bg-transparent rounded-full px-2 py-1">
+              <button
+                onClick={() => setShowTop((s) => !s)}
+                className="flex items-center gap-2 px-3 py-1 rounded-full hover:bg-gray-200/10 transition"
+                title="Toggle top performers"
+                aria-pressed={showTop}
+              >
+                <GiLaurelCrown className="text-xl" />
+                <span className="text-sm">Top</span>
+              </button>
+
+              <button
+                onClick={() => setFilterCompletedOnly((s) => !s)}
+                className={`px-3 py-1 rounded-full text-sm transition ${filterCompletedOnly ? "bg-green-600/25" : "hover:bg-gray-200/10"}`}
+                title="Filter completed only"
+                aria-pressed={filterCompletedOnly}
+              >
+                {filterCompletedOnly ? "Showing: Completed" : "Show Completed Only"}
+              </button>
+
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300/10">
+                <FiRefreshCw onClick={handleRefreshNow} className="cursor-pointer" />
+                <small className="opacity-80">Updated: <b>{lastUpdated || "—"}</b></small>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 border rounded-full px-2 py-1 bg-transparent">
+              <button
+                onClick={() => setDarkMode((d) => !d)}
+                className="p-2 rounded-full hover:bg-gray-200/10 transition"
+                title={darkMode ? "Switch to light" : "Switch to dark"}
+                aria-label="Toggle theme"
+              >
+                {darkMode ? <FiSun /> : <FiMoon />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        {/* Hero */}
+        <section className="text-center" data-aos="fade-up">
+          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
+            Welcome to <span className="text-blue-400">GenAI Study Jams 2025</span>
+          </h1>
+          <p className="mt-3 text-sm sm:text-base text-gray-400 max-w-2xl mx-auto px-2">
+            Institute-level leaderboard for GDGC AIKTC. Track badges, arcade games and completion status. Updated live from the CSV.
+          </p>
+
+          {/* Stats */}
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 justify-center">
+            <div className="p-3 sm:p-4 bg-white/5 rounded-md shadow-sm text-center">
+              <div className="text-xs opacity-80">Eligible Participants</div>
+              <div className="text-lg sm:text-2xl font-bold"><CountUp value={100} /></div>
+            </div>
+            <div className="p-3 sm:p-4 bg-white/5 rounded-md shadow-sm text-center">
+              <div className="text-xs opacity-80">Registered</div>
+              <div className="text-lg sm:text-2xl font-bold"><CountUp value={totalParticipants} /></div>
+            </div>
+            <div className="p-3 sm:p-4 bg-white/5 rounded-md shadow-sm text-center">
+              <div className="text-xs opacity-80">Qualified</div>
+              <div className="text-lg sm:text-2xl font-bold"><CountUp value={totalCompleted} /></div>
+            </div>
+          </div>
+
+          {/* Search bar */}
+          <div className="mt-6 max-w-md mx-auto w-full" data-aos="fade-up" data-aos-delay="100">
+            <div className="relative">
+              <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-full pl-12 pr-4 py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-400 transition bg-white/5"
+                placeholder="Search by name, email or rank..."
+                aria-label="Search participants"
+              />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-80">
+                <FiSearch />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Top performers */}
+        <AnimatePresence>
+          {showTop && topThree.length > 0 && (
+            <motion.section
+              className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              layout
+            >
+              <div data-aos="zoom-in" className="col-span-1 sm:col-span-1 flex justify-center">
+                <TopCard place={1} user={topThree[0] || {}} color="yellow" />
+              </div>
+              <div data-aos="zoom-in" className="col-span-1 sm:col-span-1 flex justify-center">
+                <TopCard place={2} user={topThree[1] || {}} color="red" />
+              </div>
+              <div data-aos="zoom-in" className="col-span-1 sm:col-span-1 flex justify-center">
+                <TopCard place={3} user={topThree[2] || {}} color="green" />
+              </div>
+            </motion.section>
+          )}
+        </AnimatePresence>
+
+        {/* Table */}
+        <section className="mt-10 sm:mt-12" data-aos="fade-up" data-aos-delay="200">
+          <div className={`overflow-hidden rounded-2xl shadow-lg ${darkMode ? "bg-black/60" : "bg-white"}`}>
+            <div className="w-full overflow-x-auto">
+              {/* We use a min-w to ensure columns don't squish too small on tiny screens;
+                  horizontal scroll is enabled for small devices. */}
+              <table ref={tableRef} className="min-w-[760px] text-xs sm:text-sm">
+                <thead className={`${darkMode ? "bg-gray-800 text-gray-200" : "bg-gray-100 text-gray-700"} sticky top-0`}>
+                  <tr>
+                    <th className="px-3 sm:px-4 py-3 text-left w-[6%]">Rank</th>
+                    <th className="px-3 sm:px-4 py-3 text-left w-[30%]">Name & Email</th>
+                    <th className="px-3 sm:px-4 py-3 text-left w-[14%]">Access Code</th>
+                    <th className="px-3 sm:px-4 py-3 text-left w-[14%]">Eligible</th>
+                    <th className="px-3 sm:px-4 py-3 text-left w-[8%]">Badges</th>
+                    <th className="px-3 sm:px-4 py-3 text-left w-[8%]">Arcade</th>
+                    <th className="px-3 sm:px-4 py-3 text-left w-[20%]">Progress</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" className="text-center py-8 text-gray-400">No results. Try another search.</td>
+                    </tr>
+                  ) : (
+                    filtered.map((row, idx) => {
+                      const isTop3 = row.rank <= 3;
+                      return (
+                        <tr
+                          key={idx}
+                          className={`${isTop3 ? "bg-gradient-to-r from-yellow-50/20" : darkMode ? "bg-black/50" : "bg-white"} border-b border-gray-700/20 transition hover:scale-[1.003]`}
+                        >
+                          <td className="px-3 sm:px-4 py-4 font-semibold">{row.rank}</td>
+                          <td className="px-3 sm:px-4 py-4">
+                            <div className="font-semibold truncate max-w-[220px]">{row["User Name"]}</div>
+                            <div className="text-xs opacity-70 truncate max-w-[220px]">{row["User Email"]}</div>
+                          </td>
+                          <td className="px-3 sm:px-4 py-4"><BadgeYesNo value={row["Access Code Redemption Status"]} /></td>
+                          <td className="px-3 sm:px-4 py-4"><BadgeYesNo value={row["All Skill Badges & Games Completed"]} /></td>
+                          <td className="px-3 sm:px-4 py-4 text-center font-medium">{row.badgesCompleted}</td>
+                          <td className="px-3 sm:px-4 py-4 text-center font-medium">{row.gamesCompleted}</td>
+                          <td className="px-3 sm:px-4 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1">
+                                <ProgressBar percentage={row.percentage} />
+                              </div>
+                              <div className="w-14 text-right text-sm opacity-80">{Number(row.percentage || 0).toFixed(0)}%</div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {/* Controls */}
+        <section className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <small className="text-xs opacity-80">Auto-refresh:</small>
+            <select
+              value={autoRefreshInterval}
+              onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
+              className="rounded-md px-3 py-1 bg-white/5 text-sm"
+              aria-label="Auto refresh interval"
+            >
+              <option value={0}>Off</option>
+              <option value={15}>15s</option>
+              <option value={30}>30s</option>
+              <option value={60}>1m</option>
+              <option value={300}>5m</option>
+            </select>
+
+            <button onClick={handleRefreshNow} className="ml-2 px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition text-sm">
+              Refresh now
+            </button>
+          </div>
+
+          <div className="text-sm opacity-80">
+            Showing <b>{filtered.length}</b> of <b>{totalParticipants}</b> participants • Last updated: <b>{lastUpdated || "—"}</b>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-12 py-8 border-t border-gray-700/20 text-center text-sm opacity-80">
+          © 2025 GDGC AIKTC · Built with ❤️ ·{" "}
+          <a className="underline" href="https://studyjams.netlify.app/" target="_blank" rel="noreferrer">Study Jams tutorials</a>
+          <div className="mt-2">Version 4.0 — Animations + Top performers + All participants on single page</div>
+        </footer>
+      </main>
+
+      {/* Back to top */}
+      <div
+        ref={backToTopRef}
+        className="fixed right-6 bottom-8 z-50 opacity-0 pointer-events-none transition-opacity"
+      >
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="p-3 rounded-full shadow-lg bg-blue-600 text-white hover:scale-105 transition transform"
+          aria-label="Back to top"
+        >
+          <FiChevronUp size={22} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
