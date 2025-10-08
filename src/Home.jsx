@@ -129,6 +129,47 @@ function TopCard({ place = 1, user = {}, color = "yellow" }) {
   );
 }
 
+/* Mobile card view for each participant (shown on small screens) */
+function MobileRowCard({ row }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 6 }}
+      className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700"
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <div className="font-semibold truncate text-sm">{row["User Name"] || "—"}</div>
+              <div className="text-xs opacity-70 truncate max-w-[220px]">{row["User Email"] || ""}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs opacity-70">Rank</div>
+              <div className="font-bold">{row.rank}</div>
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <div className="flex-1">
+              <div className="text-xs opacity-80 mb-1">Progress</div>
+              <ProgressBar percentage={row.percentage} />
+            </div>
+            <div className="w-16 text-right text-sm opacity-80">{Number(row.percentage || 0).toFixed(0)}%</div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2 text-xs">
+            <div><BadgeYesNo value={row["Access Code Redemption Status"]} /></div>
+            <div><BadgeYesNo value={row["All Skill Badges & Games Completed"]} /></div>
+            <div className="ml-auto text-xs opacity-80">Badges: <b>{row.badgesCompleted}</b></div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 /* ============================
    Main Page Component
    ============================ */
@@ -313,8 +354,8 @@ export default function Home() {
         style={{ WebkitBackdropFilter: "blur(6px)" }}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <img src={Logo} alt="logo" className="h-10 sm:h-12 w-auto" />
+          <div className="flex items-center gap-3 min-w-0">
+            <img src={Logo} alt="logo" className="h-10 sm:h-12 w-auto flex-shrink-0" />
             <div className="min-w-0">
               <div className="text-base sm:text-lg font-bold truncate">GDGC-AIKTC · GenAI Study Jams 2025</div>
               <div className="text-xs sm:text-sm opacity-70 truncate">Institute leaderboard & participant progress</div>
@@ -322,7 +363,8 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-3 bg-transparent rounded-full px-2 py-1">
+            {/* Controls visible on md+ */}
+            <div className="hidden md:flex items-center gap-3 bg-transparent rounded-full px-2 py-1">
               <button
                 onClick={() => setShowTop((s) => !s)}
                 className="flex items-center gap-2 px-3 py-1 rounded-full hover:bg-gray-200/10 transition"
@@ -348,6 +390,35 @@ export default function Home() {
               </div>
             </div>
 
+            {/* compact controls for small screens */}
+            <div className="flex md:hidden items-center gap-2">
+              <button
+                onClick={() => setShowTop((s) => !s)}
+                className="p-2 rounded-full hover:bg-gray-200/10 transition"
+                title="Toggle top performers"
+                aria-pressed={showTop}
+              >
+                <GiLaurelCrown />
+              </button>
+
+              <button
+                onClick={() => setFilterCompletedOnly((s) => !s)}
+                className={`p-2 rounded-full hover:bg-gray-200/10 transition ${filterCompletedOnly ? "bg-green-600/25" : ""}`}
+                title="Filter completed only"
+                aria-pressed={filterCompletedOnly}
+              >
+                {filterCompletedOnly ? "✓" : "⚑"}
+              </button>
+
+              <button
+                onClick={handleRefreshNow}
+                className="p-2 rounded-full hover:bg-gray-200/10 transition"
+                title="Refresh now"
+              >
+                <FiRefreshCw />
+              </button>
+            </div>
+
             <div className="flex items-center gap-2 border rounded-full px-2 py-1 bg-transparent">
               <button
                 onClick={() => setDarkMode((d) => !d)}
@@ -370,7 +441,7 @@ export default function Home() {
             Welcome to <span className="text-blue-400">GenAI Study Jams 2025</span>
           </h1>
           <p className="mt-3 text-sm sm:text-base text-gray-400 max-w-2xl mx-auto px-2">
-            Institute-level leaderboard for GDGC AIKTC. Track badges, arcade games and completion status. Updated as of 8 October 2025.
+            Institute-level leaderboard for GDGC AIKTC. Track badges, arcade games and completion status. Updated as of {lastUpdated ? lastUpdated : "—"}.
           </p>
 
           {/* Stats */}
@@ -410,31 +481,30 @@ export default function Home() {
         <AnimatePresence>
           {showTop && topThree.length > 0 && (
             <motion.section
-              className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6"
+              className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 items-start"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
               layout
             >
-              <div data-aos="zoom-in" className="col-span-1 sm:col-span-1 flex justify-center">
+              <div data-aos="zoom-in" className="flex justify-center">
                 <TopCard place={1} user={topThree[0] || {}} color="yellow" />
               </div>
-              <div data-aos="zoom-in" className="col-span-1 sm:col-span-1 flex justify-center">
+              <div data-aos="zoom-in" className="flex justify-center">
                 <TopCard place={2} user={topThree[1] || {}} color="red" />
               </div>
-              <div data-aos="zoom-in" className="col-span-1 sm:col-span-1 flex justify-center">
+              <div data-aos="zoom-in" className="flex justify-center">
                 <TopCard place={3} user={topThree[2] || {}} color="green" />
               </div>
             </motion.section>
           )}
         </AnimatePresence>
 
-        {/* Table */}
+        {/* Table (desktop) */}
         <section className="mt-10 sm:mt-12" data-aos="fade-up" data-aos-delay="200">
           <div className={`overflow-hidden rounded-2xl shadow-lg ${darkMode ? "bg-black/60" : "bg-white"}`}>
-            <div className="w-full overflow-x-auto">
-              {/* We use a min-w to ensure columns don't squish too small on tiny screens;
-                  horizontal scroll is enabled for small devices. */}
+            {/* Desktop table - hidden on small screens */}
+            <div className="w-full overflow-x-auto hidden md:block">
               <table ref={tableRef} className="min-w-[760px] text-xs sm:text-sm">
                 <thead className={`${darkMode ? "bg-gray-800 text-gray-200" : "bg-gray-100 text-gray-700"} sticky top-0`}>
                   <tr>
@@ -484,6 +554,15 @@ export default function Home() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile list - visible on small screens */}
+            <div className="md:hidden px-3 py-4 space-y-3">
+              {filtered.length === 0 ? (
+                <div className="text-center py-6 text-gray-400">No results. Try another search.</div>
+              ) : (
+                filtered.map((row, idx) => <MobileRowCard key={idx} row={row} />)
+              )}
+            </div>
           </div>
         </section>
 
@@ -517,7 +596,7 @@ export default function Home() {
         {/* Footer */}
         <footer className="mt-12 py-8 border-t border-gray-700/20 text-center text-sm opacity-80">
           © 2025 GDGC AIKTC · Built with ❤️ ·{" "}
-          <a className="underline" href="https://studyjams.netlify.app/" target="_blank" rel="noreferrer">Study Jams tutorials</a>=
+          <a className="underline" href="https://studyjams.netlify.app/" target="_blank" rel="noreferrer">Study Jams tutorials</a>
           <div className="mt-2">Version 4.0</div>
         </footer>
       </main>
@@ -538,4 +617,3 @@ export default function Home() {
     </div>
   );
 }
-
