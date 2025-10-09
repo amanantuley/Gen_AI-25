@@ -226,7 +226,7 @@ export default function Home() {
           .map((row) => {
             const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10) || 0;
             const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10) || 0;
-            const totalItems = 16;
+            const totalItems = 20;
             const percentage = ((badgesCompleted + gamesCompleted) / totalItems) * 100;
             return {
               ...row,
