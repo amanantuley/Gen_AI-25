@@ -237,8 +237,22 @@ export default function Home() {
           })
           .filter((r) => r["User Name"] || r["User Email"]);
 
-        mapped.sort((a, b) => b.percentage - a.percentage);
-        mapped.forEach((row, idx) => (row.rank = idx + 1));
+        mapped.sort((a, b) => {
+  const pctDiff = b.percentage - a.percentage;
+  if (pctDiff !== 0) return pctDiff;
+
+  // Preserve order based on previous leaderboard
+  const aPrev = leaderboardData.findIndex((x) => x["User Email"] === a["User Email"]);
+  const bPrev = leaderboardData.findIndex((x) => x["User Email"] === b["User Email"]);
+
+  if (aPrev !== -1 && bPrev !== -1) return aPrev - bPrev;
+
+  // Fallback alphabetical if not found
+  return (a["User Name"] || "").localeCompare(b["User Name"] || "");
+});
+
+mapped.forEach((row, idx) => (row.rank = idx + 1));
+
 
         setLeaderboardData(mapped);
         setLastUpdated(new Date().toLocaleString());
