@@ -9,6 +9,7 @@ import { GiLaurelCrown } from "react-icons/gi";
 import Logo from "./assets/logo.svg";
 import "./home.css"; // keep your existing CSS, add styles there if needed
 
+
 /* ============================
    Utilities
    ============================ */
@@ -31,38 +32,50 @@ function useDebounced(value, delay = 250) {
    ============================ */
 
 function BadgeYesNo({ value }) {
-  if (value === "Yes") {
+  // Normalize value to a safe string for comparisons
+  const normalized = value === null || value === undefined ? "" : String(value).trim();
+  const lc = normalized.toLowerCase();
+
+  if (lc === "yes") {
     return (
       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
         ✅ Yes
       </span>
     );
   }
-  if (!value || value === "0" || (value.toLowerCase && value.toLowerCase() === "no")) {
+
+  if (!normalized || normalized === "0" || lc === "no") {
     return (
       <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
         ❌ No
       </span>
     );
   }
+
+  // Fallback: show the (trimmed) original value
   return (
     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-      {value}
+      {normalized}
     </span>
   );
 }
 
+
 /* Animated counter that counts up to `value` */
 function CountUp({ value = 0, duration = 900, className = "" }) {
   const [display, setDisplay] = useState(0);
+
   useEffect(() => {
-    let start = 0;
-    const end = Number(value) || 0;
-    if (end === 0) {
+    // Make sure 'value' is a safe, finite number
+    const end = Number(value);
+    if (!Number.isFinite(end) || end <= 0) {
       setDisplay(0);
       return;
     }
+
+    let start = 0;
     const stepTime = Math.max(Math.floor(duration / end), 8);
+
     const timer = setInterval(() => {
       start += 1;
       if (start >= end) {
@@ -72,6 +85,8 @@ function CountUp({ value = 0, duration = 900, className = "" }) {
         setDisplay(start);
       }
     }, stepTime);
+
+    // Cleanup on unmount or when dependencies change
     return () => clearInterval(timer);
   }, [value, duration]);
 
