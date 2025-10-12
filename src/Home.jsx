@@ -144,8 +144,7 @@ function TopCard({ place = 1, user = {}, color = "yellow" }) {
   );
 }
 
-/* Mobile card view for each participant (shown on small screens) */
-function MobileRowCard({ row }) {
+function MobileRowCard({ row = {} }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -155,36 +154,46 @@ function MobileRowCard({ row }) {
     >
       <div className="flex items-start gap-3">
         <div className="flex-1 min-w-0">
+          {/* Name + Rank */}
           <div className="flex items-center justify-between gap-2">
             <div>
-              <div className="font-semibold truncate text-sm">{row["User Name"] || "—"}</div>
-              <div className="text-xs opacity-70 truncate max-w-[220px]">{row["User Email"] || ""}</div>
+              <div className="font-semibold truncate text-sm">
+                {row["User Name"] || "—"}
+              </div>
+              <div className="text-xs opacity-70 truncate max-w-[220px]">
+                {row["User Email"] || ""}
+              </div>
             </div>
             <div className="text-right">
               <div className="text-xs opacity-70">Rank</div>
-              <div className="font-bold">{row.rank}</div>
+              <div className="font-bold">{row.rank ?? "—"}</div>
             </div>
           </div>
 
+          {/* Progress */}
           <div className="mt-3 flex items-center justify-between gap-3">
             <div className="flex-1">
               <div className="text-xs opacity-80 mb-1">Progress</div>
-              <ProgressBar percentage={row.percentage} />
+              <ProgressBar percentage={row.percentage || 0} />
             </div>
-            <div className="w-16 text-right text-sm opacity-80">{Number(row.percentage || 0).toFixed(0)}%</div>
+            <div className="w-16 text-right text-sm opacity-80">
+              {Number(row.percentage || 0).toFixed(0)}%
+            </div>
           </div>
 
+          {/* Badges + Status */}
           <div className="mt-3 flex items-center gap-2 text-xs">
-            <div><BadgeYesNo value={row["Access Code Redemption Status"]} /></div>
-            <div><BadgeYesNo value={row["All Skill Badges & Games Completed"]} /></div>
-            <div className="ml-auto text-xs opacity-80">Badges: <b>{row.badgesCompleted}</b></div>
+            <BadgeYesNo value={row["Access Code Redemption Status"]} />
+            <BadgeYesNo value={row["All Skill Badges & Games Completed"]} />
+            <div className="ml-auto text-xs opacity-80">
+              Badges: <b>{row.badgesCompleted ?? 0}</b>
+            </div>
           </div>
         </div>
       </div>
     </motion.div>
   );
 }
-
 /* ============================
    Main Page Component
    ============================ */
