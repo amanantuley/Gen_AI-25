@@ -356,29 +356,29 @@ mapped.forEach((row, idx) => (row.rank = idx + 1));
   }, []);
 
   // UI handlers
-  const handleRefreshNow = () => {
-    Papa.parse("./leaderboard.csv", {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: (result) => {
-        const mapped = result.data
-          .map((row) => {
-            const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10) || 0;
-            const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10) || 0;
-            const totalItems = 16;
-            const percentage = ((badgesCompleted + gamesCompleted) / totalItems) * 100;
-            return { ...row, badgesCompleted, gamesCompleted, percentage };
-          })
-          .filter((r) => r["User Name"] || r["User Email"]);
+  // const handleRefreshNow = () => {
+  //   Papa.parse("./leaderboard.csv", {
+  //     download: true,
+  //     header: true,
+  //     skipEmptyLines: true,
+  //     complete: (result) => {
+  //       const mapped = result.data
+  //         .map((row) => {
+  //           const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10) || 0;
+  //           const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10) || 0;
+  //           const totalItems = 16;
+  //           const percentage = ((badgesCompleted + gamesCompleted) / totalItems) * 100;
+  //           return { ...row, badgesCompleted, gamesCompleted, percentage };
+  //         })
+  //         .filter((r) => r["User Name"] || r["User Email"]);
 
-        mapped.sort((a, b) => b.percentage - a.percentage);
-        mapped.forEach((row, idx) => (row.rank = idx + 1));
-        setLeaderboardData(mapped);
-        setLastUpdated(new Date().toLocaleString());
-      },
-    });
-  };
+  //       mapped.sort((a, b) => b.percentage - a.percentage);
+  //       mapped.forEach((row, idx) => (row.rank = idx + 1));
+  //       setLeaderboardData(mapped);
+  //       setLastUpdated(new Date().toLocaleString());
+  //     },
+  //   });
+  // };
 
   /* ============================
      Render
@@ -422,10 +422,10 @@ mapped.forEach((row, idx) => (row.rank = idx + 1));
                 {filterCompletedOnly ? "Showing: Completed" : "Show Completed Only"}
               </button>
 
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300/10">
+              {/* <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300/10">
                 <FiRefreshCw onClick={handleRefreshNow} className="cursor-pointer" />
                 <small className="opacity-80">Updated: <b>{lastUpdated || "—"}</b></small>
-              </div>
+              </div> */}
             </div>
 
             {/* compact controls for small screens */}
@@ -449,7 +449,7 @@ mapped.forEach((row, idx) => (row.rank = idx + 1));
               </button>
 
               <button
-                onClick={handleRefreshNow}
+
                 className="p-2 rounded-full hover:bg-gray-200/10 transition"
                 title="Refresh now"
               >
@@ -621,7 +621,7 @@ mapped.forEach((row, idx) => (row.rank = idx + 1));
               <option value={300}>5m</option>
             </select>
 
-            <button onClick={handleRefreshNow} className="ml-2 px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition text-sm">
+            <button className="ml-2 px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition text-sm">
               Refresh now
             </button>
           </div>
