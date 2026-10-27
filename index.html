@@ -4,10 +4,26 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/logo.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GDGC-AIKTC Leaderboard</title>
+    <meta name="description" content="Institute-level leaderboard for GDGC AIKTC. Track badges, arcade games and completion status." />
+    <meta name="theme-color" content="#1a73e8" />
+    <title>GDGC AIKTC · GenAI Study Jams 2026 Leaderboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500;600&family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      try {
+        if (localStorage.getItem('gdgc_darkmode') === 'true') {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    </script>
   </head>
-  <body>
+  <body class="bg-white dark:bg-[#1e1f20] antialiased selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-blue-900/60 dark:selection:text-blue-100">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+
