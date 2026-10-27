@@ -1,24 +1,37 @@
-// Home.jsx
-import { useState, useEffect, useMemo, useRef } from "react";
+// Home.jsx - Google Material Design with White Card Boxes (Exact Screenshot Columns)
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Papa from "papaparse";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import { FiSun, FiMoon, FiChevronUp, FiSearch, FiRefreshCw } from "react-icons/fi";
-import { GiLaurelCrown } from "react-icons/gi";
+import {
+  FiSun,
+  FiMoon,
+  FiChevronUp,
+  FiSearch,
+  FiRefreshCw,
+  FiCheck,
+  FiX,
+  FiUsers,
+  FiTarget,
+  FiCheckCircle,
+} from "react-icons/fi";
 import Logo from "./assets/logo.svg";
-import "./home.css"; // keep your existing CSS, add styles there if needed
-
-
-/* ============================
-   Utilities
-   ============================ */
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
-function useDebounced(value, delay = 250) {
+function getInitials(name) {
+  if (!name) return "?";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return parts[0].substring(0, Math.min(2, parts[0].length)).toUpperCase();
+}
+
+function useDebounced(value, delay = 200) {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
     const t = setTimeout(() => setDebounced(value), delay);
@@ -27,46 +40,11 @@ function useDebounced(value, delay = 250) {
   return debounced;
 }
 
-/* ============================
-   Small UI atoms & components
-   ============================ */
-
-function BadgeYesNo({ value }) {
-  // Normalize value to a safe string for comparisons
-  const normalized = value === null || value === undefined ? "" : String(value).trim();
-  const lc = normalized.toLowerCase();
-
-  if (lc === "yes") {
-    return (
-      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
-        ✅ Yes
-      </span>
-    );
-  }
-
-  if (!normalized || normalized === "0" || lc === "no") {
-    return (
-      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700">
-        ❌ No
-      </span>
-    );
-  }
-
-  // Fallback: show the (trimmed) original value
-  return (
-    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-      {normalized}
-    </span>
-  );
-}
-
-
-/* Animated counter that counts up to `value` */
-function CountUp({ value = 0, duration = 900, className = "" }) {
+/* Animated Counter */
+function CountUp({ value = 0, duration = 800, className = "" }) {
   const [display, setDisplay] = useState(0);
 
   useEffect(() => {
-    // Make sure 'value' is a safe, finite number
     const end = Number(value);
     if (!Number.isFinite(end) || end <= 0) {
       setDisplay(0);
@@ -74,10 +52,11 @@ function CountUp({ value = 0, duration = 900, className = "" }) {
     }
 
     let start = 0;
-    const stepTime = Math.max(Math.floor(duration / end), 8);
+    const stepTime = Math.max(Math.floor(duration / Math.min(end, 50)), 12);
+    const stepIncrement = Math.max(1, Math.floor(end / (duration / stepTime)));
 
     const timer = setInterval(() => {
-      start += 1;
+      start += stepIncrement;
       if (start >= end) {
         clearInterval(timer);
         setDisplay(end);
@@ -86,263 +65,188 @@ function CountUp({ value = 0, duration = 900, className = "" }) {
       }
     }, stepTime);
 
-    // Cleanup on unmount or when dependencies change
     return () => clearInterval(timer);
   }, [value, duration]);
 
   return <span className={className}>{display}</span>;
 }
 
-/* Progress bar with tooltip (simple) */
-function ProgressBar({ percentage = 0 }) {
-  const pct = clamp(Number(percentage) || 0, 0, 100);
-  return (
-    <div className="relative group" title={`${pct.toFixed(1)}% complete`}>
-      <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden dark:bg-gray-700">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${pct}%` }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="h-2 bg-gradient-to-r from-blue-500 to-indigo-500"
-        />
-      </div>
-    </div>
-  );
-}
+/* ==========================================================================
+   Plain White Leaderboard Box (Exact Content from Reference Screenshot)
+   Columns: Rank | Name & Email | Access Code | Eligible | Badges | Arcade | Progress
+   ========================================================================== */
+function LeaderboardBox({ row = {} }) {
+  const isRedeemed = String(row["Access Code Redemption Status"]).trim().toLowerCase() === "yes";
+  const isEligible = String(row["All Skill Badges & Games Completed"]).trim().toLowerCase() === "yes";
+  const pct = clamp(Number(row.percentage) || 0, 0, 100);
 
-/* Top 3 Card */
-function TopCard({ place = 1, user = {}, color = "yellow" }) {
-  const medal = place === 1 ? "🥇" : place === 2 ? "🥈" : "🥉";
-  const colors = {
-    yellow: "from-yellow-400 to-yellow-600",
-    red: "from-red-400 to-red-600",
-    green: "from-green-400 to-green-600",
-    blue: "from-blue-400 to-blue-600",
-  };
   return (
     <motion.div
-      whileHover={{ y: -6, scale: 1.02 }}
-      layout
-      className={`w-full max-w-xs sm:max-w-sm rounded-2xl shadow-xl p-5 bg-gradient-to-br ${colors[color]} text-white`}
-      aria-label={`Top performer #${place}`}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="bg-white/20 rounded-full w-12 h-12 flex items-center justify-center text-2xl">{medal}</div>
-          <div className="min-w-0">
-            <div className="text-sm opacity-90">Rank #{place}</div>
-            <div className="text-lg font-bold truncate max-w-[160px]">{user["User Name"] || "—"}</div>
-            <div className="text-xs opacity-80 truncate max-w-[160px]">{user["User Email"] || ""}</div>
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-xs opacity-90">Completion</div>
-          <div className="text-xl font-bold">{user.percentage ? `${Number(user.percentage).toFixed(0)}%` : "0%"}</div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-function MobileRowCard({ row = {} }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 6 }}
-      className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700"
+      layout
+      className="w-full rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-4 bg-white dark:bg-[#28292a] border border-[#e8eaed] dark:border-[#3c4043] shadow-sm sm:shadow-md hover:shadow-md sm:hover:shadow-lg transition-all duration-200"
     >
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0">
-          {/* Name + Rank */}
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <div className="font-semibold truncate text-sm">
-                {row["User Name"] || "—"}
-              </div>
-              <div className="text-xs opacity-70 truncate max-w-[220px]">
-                {row["User Email"] || ""}
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-xs opacity-70">Rank</div>
-              <div className="font-bold">{row.rank ?? "—"}</div>
-            </div>
-          </div>
+      {/* Desktop Grid Layout (Exact Match to User Screenshot) */}
+      <div className="hidden md:grid grid-cols-12 items-center gap-3 text-xs sm:text-sm">
+        {/* 1. Rank */}
+        <div className="col-span-1 font-bold text-sm sm:text-base text-[#202124] dark:text-[#e8eaed] pl-1">
+          {row.rank}
+        </div>
 
-          {/* Progress */}
-          <div className="mt-3 flex items-center justify-between gap-3">
-            <div className="flex-1">
-              <div className="text-xs opacity-80 mb-1">Progress</div>
-              <ProgressBar percentage={row.percentage || 0} />
-            </div>
-            <div className="w-16 text-right text-sm opacity-80">
-              {Number(row.percentage || 0).toFixed(0)}%
-            </div>
+        {/* 2. Name & Email */}
+        <div className="col-span-3 min-w-0 pr-2">
+          <div className="font-bold text-sm sm:text-base text-[#202124] dark:text-[#e8eaed] truncate" title={row["User Name"]}>
+            {row["User Name"] || "—"}
           </div>
+          <div className="text-xs text-[#5f6368] dark:text-[#9aa0a6] truncate font-medium mt-0.5" title={row["User Email"]}>
+            {row["User Email"] || ""}
+          </div>
+        </div>
 
-          {/* Badges + Status */}
-          <div className="mt-3 flex items-center gap-2 text-xs">
-            <BadgeYesNo value={row["Access Code Redemption Status"]} />
-            <BadgeYesNo value={row["All Skill Badges & Games Completed"]} />
-            <div className="ml-auto text-xs opacity-80">
-              Badges: <b>{row.badgesCompleted ?? 0}</b>
+        {/* 3. Access Code */}
+        <div className="col-span-2 flex items-center justify-center">
+          {isRedeemed ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0] dark:bg-[#1c3829] dark:text-[#86efac] dark:border-[#29563c]">
+              <FiCheck className="w-3.5 h-3.5 stroke-[3]" />
+              Yes
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fee2e2] text-[#b91c1c] border border-[#fecaca] dark:bg-[#482024] dark:text-[#fca5a5] dark:border-[#6f2c33]">
+              <FiX className="w-3.5 h-3.5 stroke-[3]" />
+              No
+            </span>
+          )}
+        </div>
+
+        {/* 4. Eligible */}
+        <div className="col-span-2 flex items-center justify-center">
+          {isEligible ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0] dark:bg-[#1c3829] dark:text-[#86efac] dark:border-[#29563c]">
+              <FiCheck className="w-3.5 h-3.5 stroke-[3]" />
+              Yes
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fee2e2] text-[#b91c1c] border border-[#fecaca] dark:bg-[#482024] dark:text-[#fca5a5] dark:border-[#6f2c33]">
+              <FiX className="w-3.5 h-3.5 stroke-[3]" />
+              No
+            </span>
+          )}
+        </div>
+
+        {/* 5. Badges */}
+        <div className="col-span-1 text-center font-bold text-sm sm:text-base text-[#202124] dark:text-[#e8eaed]">
+          {row.badgesCompleted ?? 0}
+        </div>
+
+        {/* 6. Arcade */}
+        <div className="col-span-1 text-center font-bold text-sm sm:text-base text-[#202124] dark:text-[#e8eaed]">
+          {row.gamesCompleted ?? 0}
+        </div>
+
+        {/* 7. Progress */}
+        <div className="col-span-2 flex items-center justify-end gap-3 pr-1">
+          <div className="flex-1 h-2 rounded-full overflow-hidden bg-[#f1f3f4] dark:bg-[#3c4043]">
+            <div
+              className="h-full rounded-full bg-[#4285f4] transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <span className="text-xs font-bold text-[#202124] dark:text-[#e8eaed] w-10 text-right">
+            {pct.toFixed(0)}%
+          </span>
+        </div>
+      </div>
+
+      {/* Mobile Card View (Minimal, compact & crisp) */}
+      <div className="md:hidden space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 font-bold text-[11px] text-[#202124] dark:text-[#e8eaed] flex-shrink-0">
+              #{row.rank}
+            </span>
+            <div className="min-w-0">
+              <div className="font-bold text-xs text-[#202124] dark:text-[#e8eaed] truncate" title={row["User Name"]}>{row["User Name"]}</div>
+              <div className="text-[10px] text-[#5f6368] dark:text-[#9aa0a6] truncate font-medium" title={row["User Email"]}>{row["User Email"]}</div>
             </div>
           </div>
+          <span className="font-bold text-xs text-[#202124] dark:text-[#e8eaed] flex-shrink-0">{pct.toFixed(0)}%</span>
+        </div>
+
+        <div className="w-full h-1.5 rounded-full overflow-hidden bg-[#f1f3f4] dark:bg-[#3c4043]">
+          <div className="h-full rounded-full bg-[#4285f4]" style={{ width: `${pct}%` }} />
+        </div>
+
+        <div className="flex items-center justify-between text-[10px] pt-0.5">
+          <div className="flex items-center gap-1.5">
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${isRedeemed ? "bg-[#dcfce7] text-[#15803d]" : "bg-[#fee2e2] text-[#b91c1c]"}`}>
+              Code: {isRedeemed ? "Yes" : "No"}
+            </span>
+            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold ${isEligible ? "bg-[#dcfce7] text-[#15803d]" : "bg-[#fee2e2] text-[#b91c1c]"}`}>
+              Eligible: {isEligible ? "Yes" : "No"}
+            </span>
+          </div>
+          <span className="font-medium text-[#5f6368] dark:text-[#9aa0a6]">
+            Badges: <b className="text-[#202124] dark:text-[#e8eaed]">{row.badgesCompleted ?? 0}</b> · Arcade: <b className="text-[#202124] dark:text-[#e8eaed]">{row.gamesCompleted ?? 0}</b>
+          </span>
         </div>
       </div>
     </motion.div>
   );
 }
-/* ============================
-   Main Page Component
-   ============================ */
+
+/* ==========================================================================
+   Main Leaderboard Application
+   ========================================================================== */
 
 export default function Home() {
-  // core data
+  // Core Data
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const debouncedSearch = useDebounced(searchQuery, 250);
+  const debouncedSearch = useDebounced(searchQuery, 200);
 
-  // UI state
-  const [darkMode, setDarkMode] = useState(() => {
-    try {
-      const saved = localStorage.getItem("gdgc_darkmode");
-      if (saved !== null) return saved === "true";
-      return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-    } catch (e) {
-      return true;
-    }
-  });
+  // UI State
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState("");
-  const [showTop, setShowTop] = useState(true);
-  const [filterCompletedOnly, setFilterCompletedOnly] = useState(false);
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState(0); // seconds, 0 = off
-  const refreshTimerRef = useRef(null);
 
-  // misc refs
-  const tableRef = useRef(null);
+  // Theme: Default to FALSE (Light Theme)
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Refs
   const backToTopRef = useRef(null);
+  const searchInputRef = useRef(null);
 
-  // initialize AOS animations
+  // AOS
   useEffect(() => {
-    AOS.init({ duration: 700, offset: 100, once: true });
+    AOS.init({ duration: 500, once: true });
   }, []);
 
-  // persist theme
+  // Sync theme
   useEffect(() => {
     try {
       localStorage.setItem("gdgc_darkmode", darkMode ? "true" : "false");
     } catch (e) {}
-    document.documentElement.classList.toggle("dark", darkMode);
+
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   }, [darkMode]);
 
-  // parse CSV
+  // Keyboard shortcut '/'
   useEffect(() => {
-    let cancelled = false;
-    Papa.parse("./leaderboard.csv", {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      complete: (result) => {
-        if (cancelled) return;
-        const mapped = result.data
-          .map((row) => {
-            const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10) || 0;
-            const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10) || 0;
-            const totalItems = 20;
-            const percentage = ((badgesCompleted + gamesCompleted) / totalItems) * 100;
-            return {
-              ...row,
-              badgesCompleted,
-              gamesCompleted,
-              percentage,
-            };
-          })
-          .filter((r) => r["User Name"] || r["User Email"]);
-
-        mapped.sort((a, b) => {
-  const pctDiff = b.percentage - a.percentage;
-  if (pctDiff !== 0) return pctDiff;
-
-  // Preserve order based on previous leaderboard
-  const aPrev = leaderboardData.findIndex((x) => x["User Email"] === a["User Email"]);
-  const bPrev = leaderboardData.findIndex((x) => x["User Email"] === b["User Email"]);
-
-  if (aPrev !== -1 && bPrev !== -1) return aPrev - bPrev;
-
-  // Fallback alphabetical if not found
-  return (a["User Name"] || "").localeCompare(b["User Name"] || "");
-});
-
-mapped.forEach((row, idx) => (row.rank = idx + 1));
-
-
-        setLeaderboardData(mapped);
-        setLastUpdated(new Date().toLocaleString());
-      },
-      error: (err) => {
-        console.error("CSV parse error:", err);
-      },
-    });
-
-    return () => {
-      cancelled = true;
+    const handleKeyDown = (e) => {
+      if (e.key === "/" && document.activeElement !== searchInputRef.current) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
     };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // auto refresh
-  useEffect(() => {
-    if (refreshTimerRef.current) {
-      clearInterval(refreshTimerRef.current);
-      refreshTimerRef.current = null;
-    }
-    if (!autoRefreshInterval || autoRefreshInterval <= 0) return;
-    refreshTimerRef.current = setInterval(() => {
-      Papa.parse("./leaderboard.csv", {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: (result) => {
-          const mapped = result.data
-            .map((row) => {
-              const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10) || 0;
-              const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10) || 0;
-              const totalItems = 16;
-              const percentage = ((badgesCompleted + gamesCompleted) / totalItems) * 100;
-              return { ...row, badgesCompleted, gamesCompleted, percentage };
-            })
-            .filter((r) => r["User Name"] || r["User Email"]);
-
-          mapped.sort((a, b) => b.percentage - a.percentage);
-          mapped.forEach((row, idx) => (row.rank = idx + 1));
-          setLeaderboardData(mapped);
-          setLastUpdated(new Date().toLocaleString());
-        },
-      });
-    }, autoRefreshInterval * 1000);
-
-    return () => clearInterval(refreshTimerRef.current);
-  }, [autoRefreshInterval]);
-
-  // derived values
-  const totalParticipants = leaderboardData.length;
-  const totalCompleted = leaderboardData.filter((r) => r["All Skill Badges & Games Completed"] === "Yes").length;
-  const topThree = leaderboardData.slice(0, 3);
-  const filtered = useMemo(() => {
-    const q = (debouncedSearch || "").trim().toLowerCase();
-    return leaderboardData.filter((r) => {
-      if (filterCompletedOnly && r["All Skill Badges & Games Completed"] !== "Yes") return false;
-      if (!q) return true;
-      return (
-        (r["User Name"] || "").toLowerCase().includes(q) ||
-        (r["User Email"] || "").toLowerCase().includes(q) ||
-        String(r["rank"]).includes(q)
-      );
-    });
-  }, [leaderboardData, debouncedSearch, filterCompletedOnly]);
-
-  // Back-to-top show/hide
+  // Scroll listener for back-to-top
   useEffect(() => {
     const onScroll = () => {
       if (window.scrollY > 400) {
@@ -355,301 +259,327 @@ mapped.forEach((row, idx) => (row.rank = idx + 1));
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // UI handlers
-  // const handleRefreshNow = () => {
-  //   Papa.parse("./leaderboard.csv", {
-  //     download: true,
-  //     header: true,
-  //     skipEmptyLines: true,
-  //     complete: (result) => {
-  //       const mapped = result.data
-  //         .map((row) => {
-  //           const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10) || 0;
-  //           const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10) || 0;
-  //           const totalItems = 16;
-  //           const percentage = ((badgesCompleted + gamesCompleted) / totalItems) * 100;
-  //           return { ...row, badgesCompleted, gamesCompleted, percentage };
-  //         })
-  //         .filter((r) => r["User Name"] || r["User Email"]);
+  // Load CSV function
+  const loadLeaderboardData = useCallback((showSpinner = false) => {
+    if (showSpinner) setIsRefreshing(true);
 
-  //       mapped.sort((a, b) => b.percentage - a.percentage);
-  //       mapped.forEach((row, idx) => (row.rank = idx + 1));
-  //       setLeaderboardData(mapped);
-  //       setLastUpdated(new Date().toLocaleString());
-  //     },
-  //   });
-  // };
+    Papa.parse("./leaderboard.csv", {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => {
+        const mapped = result.data
+          .map((row) => {
+            const badgesCompleted = parseInt(row["# of Skill Badges Completed"], 10) || 0;
+            const gamesCompleted = parseInt(row["# of Arcade Games Completed"], 10) || 0;
+            const totalItems = 20; // 19 skill badges + 1 arcade game
+            const percentage = clamp(((badgesCompleted + gamesCompleted) / totalItems) * 100, 0, 100);
 
-  /* ============================
-     Render
-     ============================ */
+            return {
+              ...row,
+              badgesCompleted,
+              gamesCompleted,
+              percentage,
+            };
+          })
+          .filter((r) => r["User Name"] || r["User Email"]);
+
+        // Sort: percentage desc, badges desc, name asc
+        mapped.sort((a, b) => {
+          const pctDiff = b.percentage - a.percentage;
+          if (pctDiff !== 0) return pctDiff;
+          const badgeDiff = b.badgesCompleted - a.badgesCompleted;
+          if (badgeDiff !== 0) return badgeDiff;
+          return (a["User Name"] || "").localeCompare(b["User Name"] || "");
+        });
+
+        // Assign Rank
+        mapped.forEach((row, idx) => {
+          row.rank = idx + 1;
+        });
+
+        setLeaderboardData(mapped);
+        setLastUpdated(
+          new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+        );
+        if (showSpinner) {
+          setTimeout(() => setIsRefreshing(false), 350);
+        }
+      },
+      error: (err) => {
+        console.error("CSV parse error:", err);
+        if (showSpinner) setIsRefreshing(false);
+      },
+    });
+  }, []);
+
+  // Initial CSV load
+  useEffect(() => {
+    loadLeaderboardData(false);
+  }, [loadLeaderboardData]);
+
+  // Top 3 performers for podium
+  const topOne = leaderboardData[0];
+  const topTwo = leaderboardData[1];
+  const topThreeUser = leaderboardData[2];
+
+  // Filtered rows by search query
+  const filtered = useMemo(() => {
+    const q = (debouncedSearch || "").trim().toLowerCase();
+    if (!q) return leaderboardData;
+
+    return leaderboardData.filter((r) => {
+      const nameMatch = (r["User Name"] || "").toLowerCase().includes(q);
+      const emailMatch = (r["User Email"] || "").toLowerCase().includes(q);
+      const rankMatch = String(r.rank).includes(q);
+
+      return nameMatch || emailMatch || rankMatch;
+    });
+  }, [leaderboardData, debouncedSearch]);
 
   return (
-    <div className={`min-h-screen ${darkMode ? "bg-gray-900 text-slate-100" : "bg-gray-50 text-slate-900"} transition-colors duration-300`}>
-      {/* Header */}
+    <div className={`min-h-screen relative overflow-x-hidden bg-white dark:bg-[#1e1f20] ${darkMode ? "text-[#e8eaed]" : "text-[#202124]"} transition-colors duration-200`}>
+      {/* Very Very Light Faded Blended Spots of 4 Google Colors on Clean White */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
+        {/* Very Light Google Blue Spot (Top Left) */}
+        <div className="absolute top-[5%] left-[6%] w-72 h-72 rounded-full bg-[#4285f4]/[0.07] dark:bg-[#4285f4]/[0.10] blur-[75px] animate-ambient-float" />
+
+        {/* Very Light Google Red Spot (Top Right) */}
+        <div className="absolute top-[8%] right-[8%] w-64 h-64 rounded-full bg-[#ea4335]/[0.06] dark:bg-[#ea4335]/[0.08] blur-[75px] animate-ambient-float-reverse" />
+
+        {/* Very Light Google Yellow Spot (Mid-Right) */}
+        <div className="absolute top-[50%] right-[10%] w-72 h-72 rounded-full bg-[#fbbc04]/[0.07] dark:bg-[#fbbc04]/[0.09] blur-[80px] animate-ambient-float" />
+
+        {/* Very Light Google Green Spot (Mid-Left) */}
+        <div className="absolute top-[56%] left-[8%] w-64 h-64 rounded-full bg-[#34a853]/[0.06] dark:bg-[#34a853]/[0.09] blur-[75px] animate-ambient-float-reverse" />
+      </div>
+
+      {/* Official Google 4-Color Accent Strip */}
+      <div className="google-gradient-bar h-[3.5px] w-full sticky top-0 z-50" />
+
+      {/* Header Bar */}
       <header
-        className={`sticky top-0 z-50 backdrop-blur-md ${darkMode ? "bg-black/50 border-b border-gray-800" : "bg-white/80 border-b border-gray-200"}`}
-        style={{ WebkitBackdropFilter: "blur(6px)" }}
+        className={`sticky top-[3.5px] z-40 transition-colors duration-200 border-b ${
+          darkMode ? "bg-[#1e1f20]/80 border-[#3c4043]" : "bg-white/80 border-[#e8eaed]"
+        } backdrop-blur-md`}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <img src={Logo} alt="logo" className="h-10 sm:h-12 w-auto flex-shrink-0" />
-            <div className="min-w-0">
-              <div className="text-base sm:text-lg font-bold truncate">GDGC-AIKTC · GenAI Study Jams 2025</div>
-              <div className="text-xs sm:text-sm opacity-70 truncate">Institute leaderboard & participant progress</div>
-            </div>
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-4">
+          {/* Logo */}
+          <div className="flex items-center">
+            <img src={Logo} alt="GDGC Logo" className="h-8 sm:h-9 w-auto flex-shrink-0" />
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* Controls visible on md+ */}
-            <div className="hidden md:flex items-center gap-3 bg-transparent rounded-full px-2 py-1">
-              <button
-                onClick={() => setShowTop((s) => !s)}
-                className="flex items-center gap-2 px-3 py-1 rounded-full hover:bg-gray-200/10 transition"
-                title="Toggle top performers"
-                aria-pressed={showTop}
-              >
-                <GiLaurelCrown className="text-xl" />
-                <span className="text-sm">Top</span>
-              </button>
+          {/* Action Controls */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Refresh */}
+            <button
+              onClick={() => loadLeaderboardData(true)}
+              disabled={isRefreshing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-[#e8eaed] dark:border-[#3c4043] bg-white/90 dark:bg-[#28292a]/90 text-[#5f6368] dark:text-[#9aa0a6] hover:bg-[#f1f3f4] dark:hover:bg-[#35373a] shadow-sm transition-colors"
+              title="Refresh Leaderboard"
+            >
+              <FiRefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin text-[#1a73e8] dark:text-[#8ab4f8]" : ""}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
 
-              <button
-                onClick={() => setFilterCompletedOnly((s) => !s)}
-                className={`px-3 py-1 rounded-full text-sm transition ${filterCompletedOnly ? "bg-green-600/25" : "hover:bg-gray-200/10"}`}
-                title="Filter completed only"
-                aria-pressed={filterCompletedOnly}
-              >
-                {filterCompletedOnly ? "Showing: Completed" : "Show Completed Only"}
-              </button>
-
-              {/* <div className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300/10">
-                <FiRefreshCw onClick={handleRefreshNow} className="cursor-pointer" />
-                <small className="opacity-80">Updated: <b>{lastUpdated || "—"}</b></small>
-              </div> */}
-            </div>
-
-            {/* compact controls for small screens */}
-            <div className="flex md:hidden items-center gap-2">
-              <button
-                onClick={() => setShowTop((s) => !s)}
-                className="p-2 rounded-full hover:bg-gray-200/10 transition"
-                title="Toggle top performers"
-                aria-pressed={showTop}
-              >
-                <GiLaurelCrown />
-              </button>
-
-              <button
-                onClick={() => setFilterCompletedOnly((s) => !s)}
-                className={`p-2 rounded-full hover:bg-gray-200/10 transition ${filterCompletedOnly ? "bg-green-600/25" : ""}`}
-                title="Filter completed only"
-                aria-pressed={filterCompletedOnly}
-              >
-                {filterCompletedOnly ? "✓" : "⚑"}
-              </button>
-
-              <button
-
-                className="p-2 rounded-full hover:bg-gray-200/10 transition"
-                title="Refresh now"
-              >
-                <FiRefreshCw />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-2 border rounded-full px-2 py-1 bg-transparent">
-              <button
-                onClick={() => setDarkMode((d) => !d)}
-                className="p-2 rounded-full hover:bg-gray-200/10 transition"
-                title={darkMode ? "Switch to light" : "Switch to dark"}
-                aria-label="Toggle theme"
-              >
-                {darkMode ? <FiSun /> : <FiMoon />}
-              </button>
-            </div>
+            {/* Dark / Light Toggle */}
+            <button
+              onClick={() => setDarkMode((d) => !d)}
+              className="p-2 rounded-full border border-[#e8eaed] dark:border-[#3c4043] bg-white/90 dark:bg-[#28292a]/90 text-[#5f6368] dark:text-[#9aa0a6] hover:bg-[#f1f3f4] dark:hover:bg-[#35373a] shadow-sm transition-colors"
+              title={darkMode ? "Switch to Light Theme" : "Switch to Dark Theme"}
+              aria-label="Toggle Theme"
+            >
+              {darkMode ? <FiSun className="w-4 h-4 text-[#fdd663]" /> : <FiMoon className="w-4 h-4 text-[#1a73e8]" />}
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Main */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-        {/* Hero */}
-        <section className="text-center" data-aos="fade-up">
-          <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
-            Welcome to <span className="text-blue-400">GenAI Study Jams 2025</span>
+      {/* Main Container */}
+      <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Hero Section */}
+        <section className="text-center mb-5 sm:mb-8" data-aos="fade-up">
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 sm:px-3.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-white/80 dark:bg-[#28292a]/80 backdrop-blur-sm border border-[#e8eaed] dark:border-[#3c4043] text-[#5f6368] dark:text-[#9aa0a6] shadow-sm mb-2 sm:mb-3">
+            <span className="w-2 h-2 rounded-full bg-[#34a853] animate-pulse" />
+            <span>Google Developer Groups on Campus · AIKTC</span>
+          </div>
+
+          <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-[#202124] dark:text-[#e8eaed]">
+            GenAI Study Jams 2026 Leaderboard
           </h1>
-          <p className="mt-3 text-sm sm:text-base text-gray-400 max-w-2xl mx-auto px-2">
-            Institute-level leaderboard for GDGC AIKTC. Track badges, arcade games and completion status. Updated as of {lastUpdated ? lastUpdated : "—"}.
+          <p className="mt-1.5 sm:mt-2 text-xs sm:text-base text-[#5f6368] dark:text-[#9aa0a6] max-w-2xl mx-auto font-medium">
+            Institute-level leaderboard for GDGC AIKTC. Track badges, arcade games and completion status.
           </p>
 
-          {/* Stats */}
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 justify-center">
-            <div className="p-3 sm:p-4 bg-white/5 rounded-md shadow-sm text-center">
-              <div className="text-xs opacity-80">Eligible Participants</div>
-              <div className="text-lg sm:text-2xl font-bold"><CountUp value={100} /></div>
-            </div>
-            <div className="p-3 sm:p-4 bg-white/5 rounded-md shadow-sm text-center">
-              <div className="text-xs opacity-80">Registered</div>
-              <div className="text-lg sm:text-2xl font-bold"><CountUp value={totalParticipants} /></div>
-            </div>
-            <div className="p-3 sm:p-4 bg-white/5 rounded-md shadow-sm text-center">
-              <div className="text-xs opacity-80">Qualified</div>
-              <div className="text-lg sm:text-2xl font-bold"><CountUp value={totalCompleted} /></div>
-            </div>
-          </div>
+          {/* Top 3 Podium: Side-by-Side (2 - 1 - 3) on Both Mobile & Desktop (Minimal & Proportional) */}
+          {topOne && (
+            <div className="mt-4 sm:mt-7 grid grid-cols-3 gap-2 sm:gap-5 max-w-[340px] sm:max-w-2xl mx-auto items-end pt-2 sm:pt-4 pb-1 sm:pb-2">
+              {/* Rank 2 (Left) */}
+              {topTwo && (
+                <div className="order-1 relative bg-white dark:bg-[#28292a] rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border border-[#e8eaed] dark:border-[#3c4043] shadow-sm sm:shadow-md hover:shadow-lg transition-all duration-200 text-center">
+                  <div className="absolute -top-1.5 -right-1.5 sm:-top-2.5 sm:-right-2.5 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#f1f5f9] to-[#94a3b8] text-[#1e293b] border sm:border-2 border-white dark:border-[#28292a] font-black text-[9px] sm:text-xs flex items-center justify-center shadow-sm">
+                    2
+                  </div>
+                  <div className="w-7 h-7 sm:w-13 sm:h-13 rounded-full mx-auto bg-[#e8f0fe] text-[#1a73e8] border border-[#c2e7ff] flex items-center justify-center text-[10px] sm:text-lg font-bold shadow-sm mb-1 sm:mb-2.5">
+                    {getInitials(topTwo["User Name"])}
+                  </div>
+                  <div className="font-extrabold text-[#1a73e8] dark:text-[#60a5fa] text-[10px] sm:text-sm truncate px-0.5" title={topTwo["User Name"]}>
+                    {topTwo["User Name"]}
+                  </div>
+                  <div className="text-[8.5px] sm:text-xs font-semibold text-[#5f6368] dark:text-[#9aa0a6] mt-0.5 sm:mt-1">
+                    {(topTwo.badgesCompleted || 0) + (topTwo.gamesCompleted || 0)}/20 pts
+                  </div>
+                  <div className="text-[8px] sm:text-[11px] font-bold text-[#202124] dark:text-[#e8eaed] mt-0.5 sm:mt-2">
+                    Level: Qualified
+                  </div>
+                </div>
+              )}
 
-          {/* Search bar */}
-          <div className="mt-6 max-w-md mx-auto w-full" data-aos="fade-up" data-aos-delay="100">
-            <div className="relative">
-              <input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-full pl-12 pr-4 py-3 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-400 transition bg-white/5"
-                placeholder="Search by name, email or rank..."
-                aria-label="Search participants"
-              />
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 opacity-80">
-                <FiSearch />
+              {/* Rank 1 (Center - Elevated) */}
+              <div className="order-2 relative bg-white dark:bg-[#28292a] rounded-xl sm:rounded-2xl p-2 sm:p-5 border-2 border-[#fbbc04]/60 dark:border-[#fbbc04]/40 shadow-md sm:shadow-xl hover:shadow-2xl transition-all duration-200 text-center -translate-y-1.5 sm:-translate-y-3">
+                <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#fef08a] to-[#eab308] text-[#713f12] border sm:border-2 border-white dark:border-[#28292a] font-black text-[10px] sm:text-sm flex items-center justify-center shadow-md">
+                  1
+                </div>
+                <div className="w-9 h-9 sm:w-16 sm:h-16 rounded-full mx-auto bg-[#fef3c7] text-[#b45309] border border-[#fde68a] flex items-center justify-center text-xs sm:text-xl font-black shadow-sm mb-1 sm:mb-2.5">
+                  {getInitials(topOne["User Name"])}
+                </div>
+                <div className="font-extrabold text-[#1a73e8] dark:text-[#60a5fa] text-[11px] sm:text-base truncate px-0.5" title={topOne["User Name"]}>
+                  {topOne["User Name"]}
+                </div>
+                <div className="text-[9px] sm:text-xs font-semibold text-[#5f6368] dark:text-[#9aa0a6] mt-0.5 sm:mt-1">
+                  {(topOne.badgesCompleted || 0) + (topOne.gamesCompleted || 0)}/20 pts
+                </div>
+                <div className="text-[8.5px] sm:text-xs font-bold text-[#202124] dark:text-[#e8eaed] mt-0.5 sm:mt-2">
+                  Level: Qualified
+                </div>
               </div>
+
+              {/* Rank 3 (Right) */}
+              {topThreeUser && (
+                <div className="order-3 relative bg-white dark:bg-[#28292a] rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border border-[#e8eaed] dark:border-[#3c4043] shadow-sm sm:shadow-md hover:shadow-lg transition-all duration-200 text-center">
+                  <div className="absolute -top-1.5 -right-1.5 sm:-top-2.5 sm:-right-2.5 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#ffedd5] to-[#f97316] text-[#7c2d12] border sm:border-2 border-white dark:border-[#28292a] font-black text-[9px] sm:text-xs flex items-center justify-center shadow-sm">
+                    3
+                  </div>
+                  <div className="w-7 h-7 sm:w-13 sm:h-13 rounded-full mx-auto bg-[#ffedd5] text-[#c2410c] border border-[#fed7aa] flex items-center justify-center text-[10px] sm:text-lg font-bold shadow-sm mb-1 sm:mb-2.5">
+                    {getInitials(topThreeUser["User Name"])}
+                  </div>
+                  <div className="font-extrabold text-[#1a73e8] dark:text-[#60a5fa] text-[10px] sm:text-sm truncate px-0.5" title={topThreeUser["User Name"]}>
+                    {topThreeUser["User Name"]}
+                  </div>
+                  <div className="text-[8.5px] sm:text-xs font-semibold text-[#5f6368] dark:text-[#9aa0a6] mt-0.5 sm:mt-1">
+                    {(topThreeUser.badgesCompleted || 0) + (topThreeUser.gamesCompleted || 0)}/20 pts
+                  </div>
+                  <div className="text-[8px] sm:text-[11px] font-bold text-[#202124] dark:text-[#e8eaed] mt-0.5 sm:mt-2">
+                    Level: Qualified
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
         </section>
 
-        {/* Top performers */}
-        <AnimatePresence>
-          {showTop && topThree.length > 0 && (
-            <motion.section
-              className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 items-start"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              layout
-            >
-              <div data-aos="zoom-in" className="flex justify-center">
-                <TopCard place={1} user={topThree[0] || {}} color="yellow" />
+        {/* Search Bar (Centered in middle, compact width, with Google 4-Color gradient outline) */}
+        <section className="mt-14 sm:mt-20 mb-7 sm:mb-9 flex justify-center px-4">
+          <div className="w-full max-w-sm sm:max-w-md p-[1.5px] rounded-full google-border-pill shadow-sm sm:shadow-md hover:shadow-md transition-shadow">
+            <div className="relative w-full rounded-full bg-white dark:bg-[#28292a] flex items-center">
+              <div className="absolute inset-y-0 left-0 pl-3.5 sm:pl-4 flex items-center pointer-events-none text-[#5f6368] dark:text-[#9aa0a6]">
+                <FiSearch className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#4285f4]" />
               </div>
-              <div data-aos="zoom-in" className="flex justify-center">
-                <TopCard place={2} user={topThree[1] || {}} color="red" />
-              </div>
-              <div data-aos="zoom-in" className="flex justify-center">
-                <TopCard place={3} user={topThree[2] || {}} color="green" />
-              </div>
-            </motion.section>
-          )}
-        </AnimatePresence>
-
-        {/* Table (desktop) */}
-        <section className="mt-10 sm:mt-12" data-aos="fade-up" data-aos-delay="200">
-          <div className={`overflow-hidden rounded-2xl shadow-lg ${darkMode ? "bg-black/60" : "bg-white"}`}>
-            {/* Desktop table - hidden on small screens */}
-            <div className="w-full overflow-x-auto hidden md:block">
-              <table ref={tableRef} className="min-w-[760px] text-xs sm:text-sm">
-                <thead className={`${darkMode ? "bg-gray-800 text-gray-200" : "bg-gray-100 text-gray-700"} sticky top-0`}>
-                  <tr>
-                    <th className="px-3 sm:px-4 py-3 text-left w-[6%]">Rank</th>
-                    <th className="px-3 sm:px-4 py-3 text-left w-[30%]">Name & Email</th>
-                    <th className="px-3 sm:px-4 py-3 text-left w-[14%]">Access Code</th>
-                    <th className="px-3 sm:px-4 py-3 text-left w-[14%]">Eligible</th>
-                    <th className="px-3 sm:px-4 py-3 text-left w-[8%]">Badges</th>
-                    <th className="px-3 sm:px-4 py-3 text-left w-[8%]">Arcade</th>
-                    <th className="px-3 sm:px-4 py-3 text-left w-[20%]">Progress</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="text-center py-8 text-gray-400">No results. Try another search.</td>
-                    </tr>
-                  ) : (
-                    filtered.map((row, idx) => {
-                      const isTop3 = row.rank <= 3;
-                      return (
-                        <tr
-                          key={idx}
-                          className={`${isTop3 ? "bg-gradient-to-r from-yellow-50/20" : darkMode ? "bg-black/50" : "bg-white"} border-b border-gray-700/20 transition hover:scale-[1.003]`}
-                        >
-                          <td className="px-3 sm:px-4 py-4 font-semibold">{row.rank}</td>
-                          <td className="px-3 sm:px-4 py-4">
-                            <div className="font-semibold truncate max-w-[220px]">{row["User Name"]}</div>
-                            <div className="text-xs opacity-70 truncate max-w-[220px]">{row["User Email"]}</div>
-                          </td>
-                          <td className="px-3 sm:px-4 py-4"><BadgeYesNo value={row["Access Code Redemption Status"]} /></td>
-                          <td className="px-3 sm:px-4 py-4"><BadgeYesNo value={row["All Skill Badges & Games Completed"]} /></td>
-                          <td className="px-3 sm:px-4 py-4 text-center font-medium">{row.badgesCompleted}</td>
-                          <td className="px-3 sm:px-4 py-4 text-center font-medium">{row.gamesCompleted}</td>
-                          <td className="px-3 sm:px-4 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex-1">
-                                <ProgressBar percentage={row.percentage} />
-                              </div>
-                              <div className="w-14 text-right text-sm opacity-80">{Number(row.percentage || 0).toFixed(0)}%</div>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile list - visible on small screens */}
-            <div className="md:hidden px-3 py-4 space-y-3">
-              {filtered.length === 0 ? (
-                <div className="text-center py-6 text-gray-400">No results. Try another search.</div>
-              ) : (
-                filtered.map((row, idx) => <MobileRowCard key={idx} row={row} />)
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, email or rank..."
+                className="w-full pl-9 sm:pl-10 pr-8 sm:pr-9 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm bg-transparent text-[#202124] dark:text-[#e8eaed] placeholder-[#80868b] dark:placeholder-[#9aa0a6] focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-0 pr-3 sm:pr-3.5 flex items-center text-[#5f6368] dark:text-[#9aa0a6] hover:text-[#202124] dark:hover:text-[#e8eaed]"
+                  title="Clear search"
+                >
+                  <FiX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                </button>
               )}
             </div>
           </div>
         </section>
 
-        {/* Controls */}
-        <section className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <small className="text-xs opacity-80">Auto-refresh:</small>
-            <select
-              value={autoRefreshInterval}
-              onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
-              className="rounded-md px-3 py-1 bg-white/5 text-sm"
-              aria-label="Auto refresh interval"
-            >
-              <option value={0}>Off</option>
-              <option value={15}>15s</option>
-              <option value={30}>30s</option>
-              <option value={60}>1m</option>
-              <option value={300}>5m</option>
-            </select>
+        {/* Header Bar Above Boxes (Exact Columns as Screenshot) */}
+        <div className="hidden md:grid grid-cols-12 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-[#5f6368] dark:text-[#9aa0a6] mb-2">
+          <div className="col-span-1 pl-1">Rank</div>
+          <div className="col-span-3">Name & Email</div>
+          <div className="col-span-2 text-center">Access Code</div>
+          <div className="col-span-2 text-center">Eligible</div>
+          <div className="col-span-1 text-center">Badges</div>
+          <div className="col-span-1 text-center">Arcade</div>
+          <div className="col-span-2 text-right pr-1">Progress</div>
+        </div>
 
-            <button className="ml-2 px-3 py-1 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition text-sm">
-              Refresh now
-            </button>
-          </div>
-
-          <div className="text-sm opacity-80">
-            Showing <b>{filtered.length}</b> of <b>{totalParticipants}</b> participants • Last updated: <b>{lastUpdated || "—"}</b>
-          </div>
+        {/* List of Leaderboard Boxes (White Box with Drop Shadow) */}
+        <section className="space-y-2 sm:space-y-3">
+          {filtered.length === 0 ? (
+            <div className="bg-white dark:bg-[#28292a] rounded-2xl p-12 text-center border border-[#e8eaed] dark:border-[#3c4043] shadow-md text-[#5f6368] dark:text-[#9aa0a6]">
+              <FiSearch className="w-8 h-8 mx-auto opacity-40 mb-2" />
+              <div className="text-base font-bold text-[#202124] dark:text-[#e8eaed]">No matching participants found</div>
+              <div className="text-xs opacity-75 mt-1">Try searching with a different name, email, or clearing filters</div>
+            </div>
+          ) : (
+            filtered.map((row) => (
+              <LeaderboardBox key={row["User Email"] || row.rank} row={row} />
+            ))
+          )}
         </section>
 
         {/* Footer */}
-        <footer className="mt-12 py-8 border-t border-gray-700/20 text-center text-sm opacity-80">
-          © 2025 GDGC AIKTC · Built with ❤️ ·{" "}
-          <a className="underline" href="https://studyjams.netlify.app/" target="_blank" rel="noreferrer">Study Jams tutorials</a>
-          <div className="mt-2">Version 4.0</div>
+        <footer className="mt-12 py-8 border-t border-[#e8eaed] dark:border-[#3c4043] text-center text-xs text-[#5f6368] dark:text-[#9aa0a6] space-y-2">
+          <div className="flex items-center justify-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#4285f4]" />
+            <span className="w-2 h-2 rounded-full bg-[#ea4335]" />
+            <span className="w-2 h-2 rounded-full bg-[#fbbc04]" />
+            <span className="w-2 h-2 rounded-full bg-[#34a853]" />
+            <span className="font-bold text-[#202124] dark:text-[#e8eaed] ml-1">
+              Google Developer Groups on Campus (GDGC) · AIKTC
+            </span>
+          </div>
+          <p>
+            Anjuman-I-Islam&apos;s Kalsekar Technical Campus · GenAI Study Jams 2026
+          </p>
+          <div className="pt-2 flex items-center justify-center gap-4 text-xs font-semibold">
+            <a
+              href="https://studyjams.netlify.app/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#1a73e8] dark:text-[#8ab4f8] hover:underline"
+            >
+              Study Jams Tutorials
+            </a>
+            <span>•</span>
+            <a
+              href="https://www.cloudskillsboost.google/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-[#1a73e8] dark:text-[#8ab4f8] hover:underline"
+            >
+              Google Cloud Skills Boost
+            </a>
+          </div>
         </footer>
       </main>
 
-      {/* Back to top */}
+      {/* Back to top button */}
       <div
         ref={backToTopRef}
-        className="fixed right-6 bottom-8 z-50 opacity-0 pointer-events-none transition-opacity"
+        className="fixed right-6 bottom-6 z-50 opacity-0 pointer-events-none transition-all duration-200"
       >
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="p-3 rounded-full shadow-lg bg-blue-600 text-white hover:scale-105 transition transform"
+          className="p-3 rounded-full shadow-lg bg-[#1a73e8] text-white hover:bg-[#1765cc] dark:bg-[#8ab4f8] dark:text-[#202124] dark:hover:bg-[#a8c7fa] transition-all transform hover:scale-105"
           aria-label="Back to top"
+          title="Back to top"
         >
-          <FiChevronUp size={22} />
+          <FiChevronUp className="w-5 h-5 stroke-[2.5]" />
         </button>
       </div>
     </div>

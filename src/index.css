@@ -1,3 +1,103 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    scroll-behavior: smooth;
+  }
+  
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom subtle scrollbar matching Google Material design */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #dadce0;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #bdc1c6;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #3c4043;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #5f6368;
+  }
+}
+
+/* Google 4-Color Gradient Bar */
+.google-gradient-bar {
+  background: linear-gradient(
+    90deg,
+    #4285f4 0%,
+    #4285f4 25%,
+    #ea4335 25%,
+    #ea4335 50%,
+    #fbbc04 50%,
+    #fbbc04 75%,
+    #34a853 75%,
+    #34a853 100%
+  );
+}
+
+/* Subtle Google Material Card Shadows */
+.google-card-shadow {
+  box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+}
+
+.google-card-shadow-hover {
+  box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+}
+
+/* Google 4-Color Gradient Border Outline for Pill / Search Bar */
+.google-border-pill {
+  background: linear-gradient(
+    90deg,
+    #4285f4 0%,
+    #ea4335 32%,
+    #fbbc04 68%,
+    #34a853 100%
+  );
+}
+
+/* Clean White Background with Google Color Spot Ambient Layer */
+.google-mesh-bg {
+  background-color: #ffffff;
+}
+
+.dark .google-mesh-bg {
+  background-color: #1e1f20;
+}
+
+
+/* Floating ambient glow animation */
+@keyframes ambientFloat {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.05);
+  }
+}
+
+.animate-ambient-float {
+  animation: ambientFloat 14s ease-in-out infinite;
+}
+
+.animate-ambient-float-reverse {
+  animation: ambientFloat 18s ease-in-out infinite reverse;
+}
+
+
