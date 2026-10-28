@@ -18,6 +18,41 @@ import {
 } from "react-icons/fi";
 import Logo from "./assets/logo.svg";
 
+/* ==========================================================================
+   GDGC Graphic Poster Shapes (Matching GDGC AIKTC Official Design System)
+   ========================================================================== */
+function SparkleStar({ className = "", fill = "#ea4335" }) {
+  return (
+    <svg viewBox="0 0 100 100" className={className} fill={fill}>
+      <path d="M50 0 C50 27.6 27.6 50 0 50 C27.6 50 50 72.4 50 100 C50 72.4 72.4 50 100 50 C72.4 50 50 27.6 50 0 Z" />
+    </svg>
+  );
+}
+
+function Sunburst({ className = "", fill = "#4285f4" }) {
+  return (
+    <svg viewBox="0 0 100 100" className={className} fill={fill}>
+      <path d="M50 0 L58 15 L74 6 L77 24 L94 22 L89 39 L100 47 L89 56 L94 73 L77 71 L74 89 L58 80 L50 95 L42 80 L26 89 L23 71 L6 73 L11 56 L0 47 L11 39 L6 22 L23 24 L26 6 L42 15 Z" />
+    </svg>
+  );
+}
+
+function SteppedBlock({ className = "", fill = "#4285f4" }) {
+  return (
+    <svg viewBox="0 0 100 100" className={className} fill={fill}>
+      <path d="M0 0 H65 V45 H100 V100 H0 Z" />
+    </svg>
+  );
+}
+
+function GeoArch({ className = "", fill = "#ea4335" }) {
+  return (
+    <svg viewBox="0 0 100 120" className={className} fill={fill}>
+      <path d="M0 50 C0 22.38 22.38 0 50 0 C77.62 0 100 22.38 100 50 V120 H0 Z" />
+    </svg>
+  );
+}
+
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
@@ -80,18 +115,56 @@ function LeaderboardBox({ row = {} }) {
   const isEligible = String(row["All Skill Badges & Games Completed"]).trim().toLowerCase() === "yes";
   const pct = clamp(Number(row.percentage) || 0, 0, 100);
 
+  // Top 3 specific outline & inner shade styles
+  const rankTheme = useMemo(() => {
+    if (row.rank === 1) {
+      return {
+        box: "border-2 border-[#f59e0b] dark:border-[#fbbf24] shadow-[inset_0_1px_10px_rgba(245,158,11,0.14)] dark:shadow-[inset_0_1px_12px_rgba(251,191,36,0.12)] bg-gradient-to-r from-[#fffdf0] via-white to-white dark:from-[#352a14]/50 dark:via-[#28292a] dark:to-[#28292a]",
+        badgeDesktop: "bg-gradient-to-br from-[#fde047] to-[#eab308] text-[#713f12] ring-1 ring-amber-400",
+        badgeMobile: "bg-gradient-to-br from-[#fde047] to-[#eab308] text-[#713f12]",
+      };
+    }
+    if (row.rank === 2) {
+      return {
+        box: "border-2 border-[#94a3b8] dark:border-[#94a3b8] shadow-[inset_0_1px_10px_rgba(148,163,184,0.18)] dark:shadow-[inset_0_1px_12px_rgba(148,163,184,0.12)] bg-gradient-to-r from-[#f8fafc] via-white to-white dark:from-[#2c323d]/50 dark:via-[#28292a] dark:to-[#28292a]",
+        badgeDesktop: "bg-gradient-to-br from-[#f8fafc] to-[#cbd5e1] text-[#1e293b] ring-1 ring-slate-400",
+        badgeMobile: "bg-gradient-to-br from-[#f8fafc] to-[#cbd5e1] text-[#1e293b]",
+      };
+    }
+    if (row.rank === 3) {
+      return {
+        box: "border-2 border-[#ea580c] dark:border-[#f97316] shadow-[inset_0_1px_10px_rgba(234,88,12,0.14)] dark:shadow-[inset_0_1px_12px_rgba(249,115,22,0.12)] bg-gradient-to-r from-[#fff7ed] via-white to-white dark:from-[#362319]/50 dark:via-[#28292a] dark:to-[#28292a]",
+        badgeDesktop: "bg-gradient-to-br from-[#fed7aa] to-[#fb923c] text-[#431407] ring-1 ring-orange-400",
+        badgeMobile: "bg-gradient-to-br from-[#fed7aa] to-[#fb923c] text-[#431407]",
+      };
+    }
+    return {
+      box: "border border-[#e8eaed] dark:border-[#3c4043] bg-white dark:bg-[#28292a]",
+      badgeDesktop: "",
+      badgeMobile: "",
+    };
+  }, [row.rank]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       layout
-      className="w-full rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-4 bg-white dark:bg-[#28292a] border border-[#e8eaed] dark:border-[#3c4043] shadow-sm sm:shadow-md hover:shadow-md sm:hover:shadow-lg transition-all duration-200"
+      className={`w-full rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-4 ${rankTheme.box} shadow-sm sm:shadow-md hover:shadow-md sm:hover:shadow-lg transition-all duration-200`}
     >
       {/* Desktop Grid Layout (Exact Match to User Screenshot) */}
       <div className="hidden md:grid grid-cols-12 items-center gap-3 text-xs sm:text-sm">
         {/* 1. Rank */}
-        <div className="col-span-1 font-bold text-sm sm:text-base text-[#202124] dark:text-[#e8eaed] pl-1">
-          {row.rank}
+        <div className="col-span-1 pl-1 flex items-center">
+          {row.rank <= 3 ? (
+            <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full font-black text-xs shadow-sm ${rankTheme.badgeDesktop}`}>
+              {row.rank}
+            </span>
+          ) : (
+            <span className="font-bold text-sm sm:text-base text-[#202124] dark:text-[#e8eaed]">
+              {row.rank}
+            </span>
+          )}
         </div>
 
         {/* 2. Name & Email */}
@@ -162,9 +235,15 @@ function LeaderboardBox({ row = {} }) {
       <div className="md:hidden space-y-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 font-bold text-[11px] text-[#202124] dark:text-[#e8eaed] flex-shrink-0">
-              #{row.rank}
-            </span>
+            {row.rank <= 3 ? (
+              <span className={`inline-flex items-center justify-center w-6 h-6 rounded-md font-black text-[11px] flex-shrink-0 shadow-xs ${rankTheme.badgeMobile}`}>
+                #{row.rank}
+              </span>
+            ) : (
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-gray-100 dark:bg-gray-800 font-bold text-[11px] text-[#202124] dark:text-[#e8eaed] flex-shrink-0">
+                #{row.rank}
+              </span>
+            )}
             <div className="min-w-0">
               <div className="font-bold text-xs text-[#202124] dark:text-[#e8eaed] truncate" title={row["User Name"]}>{row["User Name"]}</div>
               <div className="text-[10px] text-[#5f6368] dark:text-[#9aa0a6] truncate font-medium" title={row["User Email"]}>{row["User Email"]}</div>
@@ -338,20 +417,44 @@ export default function Home() {
   }, [leaderboardData, debouncedSearch]);
 
   return (
-    <div className={`min-h-screen relative overflow-x-hidden bg-white dark:bg-[#1e1f20] ${darkMode ? "text-[#e8eaed]" : "text-[#202124]"} transition-colors duration-200`}>
-      {/* Very Very Light Faded Blended Spots of 4 Google Colors on Clean White */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
-        {/* Very Light Google Blue Spot (Top Left) */}
-        <div className="absolute top-[5%] left-[6%] w-72 h-72 rounded-full bg-[#4285f4]/[0.07] dark:bg-[#4285f4]/[0.10] blur-[75px] animate-ambient-float" />
+    <div className={`min-h-screen relative overflow-x-hidden bg-white dark:bg-[#1e1f20] gdgc-graph-grid ${darkMode ? "text-[#e8eaed]" : "text-[#202124]"} transition-colors duration-200`}>
+      {/* GDGC Poster Background: Faint Clean Graph Paper Grid + Subtle Geometric Brand Accents (Minimal on Mobile) */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 select-none" aria-hidden="true">
+        {/* TOP-LEFT CLUSTER (Arch & Stepped Block hidden on mobile; gentle soft green circle kept) */}
+        <div className="hidden sm:block absolute -top-10 -left-12 w-64 h-72 opacity-[0.09] dark:opacity-[0.07] animate-ambient-float">
+          <GeoArch className="w-full h-full" fill="#ea4335" />
+        </div>
+        <div className="absolute top-4 left-6 sm:top-8 sm:left-28 w-14 h-14 sm:w-28 sm:h-28 rounded-full bg-[#34a853] opacity-[0.08] dark:opacity-[0.06] animate-ambient-float-reverse" />
+        <div className="hidden sm:block absolute top-44 -left-6 w-24 h-24 opacity-[0.07] dark:opacity-[0.06]">
+          <SteppedBlock className="w-full h-full" fill="#4285f4" />
+        </div>
 
-        {/* Very Light Google Red Spot (Top Right) */}
-        <div className="absolute top-[8%] right-[8%] w-64 h-64 rounded-full bg-[#ea4335]/[0.06] dark:bg-[#ea4335]/[0.08] blur-[75px] animate-ambient-float-reverse" />
+        {/* TOP-RIGHT CLUSTER (Corner disc & yellow arc hidden on mobile; single subtle sparkle kept) */}
+        <div className="hidden sm:block absolute -top-8 -right-8 w-44 h-44 rounded-full bg-[#4285f4] opacity-[0.08] dark:opacity-[0.06] animate-ambient-float" />
+        <div className="absolute top-14 right-6 sm:top-20 sm:right-24 w-8 h-8 sm:w-16 sm:h-16 opacity-[0.14] dark:opacity-[0.10] animate-ambient-float-reverse">
+          <SparkleStar className="w-full h-full" fill="#ea4335" />
+        </div>
+        <div className="hidden sm:block absolute top-48 -right-4 w-28 h-20 rounded-l-full bg-[#fbbc04] opacity-[0.11] dark:opacity-[0.08] animate-ambient-float" />
 
-        {/* Very Light Google Yellow Spot (Mid-Right) */}
-        <div className="absolute top-[50%] right-[10%] w-72 h-72 rounded-full bg-[#fbbc04]/[0.07] dark:bg-[#fbbc04]/[0.09] blur-[80px] animate-ambient-float" />
+        {/* MID-PAGE LEFT CLUSTER (Desktop only to prevent clutter on mobile) */}
+        <div className="hidden sm:block absolute top-[48%] -left-12 sm:-left-8 w-36 h-36 sm:w-48 sm:h-48 opacity-[0.07] dark:opacity-[0.05] animate-spin-slow">
+          <Sunburst className="w-full h-full" fill="#4285f4" />
+        </div>
+        <div className="hidden sm:block absolute top-[58%] left-10 w-24 h-8 rounded-full bg-[#fbbc04] opacity-[0.12] dark:opacity-[0.09] rotate-[-8deg] animate-ambient-float" />
 
-        {/* Very Light Google Green Spot (Mid-Left) */}
-        <div className="absolute top-[56%] left-[8%] w-64 h-64 rounded-full bg-[#34a853]/[0.06] dark:bg-[#34a853]/[0.09] blur-[75px] animate-ambient-float-reverse" />
+        {/* MID-PAGE RIGHT CLUSTER (Desktop only) */}
+        <div className="hidden sm:block absolute top-[52%] right-6 sm:right-16 w-10 h-10 sm:w-14 sm:h-14 opacity-[0.16] dark:opacity-[0.12] animate-ambient-float">
+          <SparkleStar className="w-full h-full" fill="#ea4335" />
+        </div>
+        <div className="hidden sm:block absolute top-[62%] -right-6 w-32 h-12 rounded-l-full bg-[#34a853] opacity-[0.09] dark:opacity-[0.07] animate-ambient-float-reverse" />
+
+        {/* BOTTOM / LOWER CLUSTER (Desktop only) */}
+        <div className="hidden sm:block absolute bottom-16 left-12 w-14 h-14 opacity-[0.14] dark:opacity-[0.10] animate-ambient-float">
+          <SparkleStar className="w-full h-full" fill="#ea4335" />
+        </div>
+        <div className="hidden sm:block absolute bottom-8 right-12 w-28 h-28 opacity-[0.07] dark:opacity-[0.05] animate-spin-slow">
+          <Sunburst className="w-full h-full" fill="#4285f4" />
+        </div>
       </div>
 
       {/* Official Google 4-Color Accent Strip */}
@@ -396,16 +499,20 @@ export default function Home() {
       </header>
 
       {/* Main Container */}
-      <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-7 pb-4 sm:py-8">
         {/* Hero Section */}
-        <section className="text-center mb-5 sm:mb-8" data-aos="fade-up">
+        <section className="text-center pt-2 sm:pt-0 mb-5 sm:mb-8" data-aos="fade-up">
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 sm:px-3.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-white/80 dark:bg-[#28292a]/80 backdrop-blur-sm border border-[#e8eaed] dark:border-[#3c4043] text-[#5f6368] dark:text-[#9aa0a6] shadow-sm mb-2 sm:mb-3">
             <span className="w-2 h-2 rounded-full bg-[#34a853] animate-pulse" />
             <span>Google Developer Groups on Campus · AIKTC</span>
           </div>
 
-          <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-[#202124] dark:text-[#e8eaed]">
-            GenAI Study Jams 2026 Leaderboard
+          <h1 className="text-xl sm:text-3xl md:text-4xl font-extrabold tracking-tight">
+            <span className="text-[#4285f4]">GenAI</span>{" "}
+            <span className="text-[#ea4335]">Study</span>{" "}
+            <span className="text-[#fbbc04] dark:text-[#fdd663]">Jams</span>{" "}
+            <span className="text-[#34a853]">2026</span>{" "}
+            <span className="text-[#4285f4] dark:text-[#8ab4f8]">Leaderboard</span>
           </h1>
           <p className="mt-1.5 sm:mt-2 text-xs sm:text-base text-[#5f6368] dark:text-[#9aa0a6] max-w-2xl mx-auto font-medium">
             Institute-level leaderboard for GDGC AIKTC. Track badges, arcade games and completion status.
@@ -414,13 +521,13 @@ export default function Home() {
           {/* Top 3 Podium: Side-by-Side (2 - 1 - 3) on Both Mobile & Desktop (Minimal & Proportional) */}
           {topOne && (
             <div className="mt-4 sm:mt-7 grid grid-cols-3 gap-2 sm:gap-5 max-w-[340px] sm:max-w-2xl mx-auto items-end pt-2 sm:pt-4 pb-1 sm:pb-2">
-              {/* Rank 2 (Left) */}
+              {/* Rank 2 (Left) - Silver Outline & Inner Shade */}
               {topTwo && (
-                <div className="order-1 relative bg-white dark:bg-[#28292a] rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border border-[#e8eaed] dark:border-[#3c4043] shadow-sm sm:shadow-md hover:shadow-lg transition-all duration-200 text-center">
-                  <div className="absolute -top-1.5 -right-1.5 sm:-top-2.5 sm:-right-2.5 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#f1f5f9] to-[#94a3b8] text-[#1e293b] border sm:border-2 border-white dark:border-[#28292a] font-black text-[9px] sm:text-xs flex items-center justify-center shadow-sm">
+                <div className="order-1 relative rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border-2 border-[#94a3b8] dark:border-[#94a3b8]/80 shadow-[inset_0_2px_14px_rgba(148,163,184,0.22)] dark:shadow-[inset_0_2px_16px_rgba(148,163,184,0.15)] bg-gradient-to-b from-[#f8fafc] via-white to-[#f1f5f9] dark:from-[#2c323d] dark:via-[#28292a] dark:to-[#28292a] shadow-md shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-200 text-center">
+                  <div className="absolute -top-1.5 -right-1.5 sm:-top-2.5 sm:-right-2.5 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#f8fafc] via-[#cbd5e1] to-[#94a3b8] text-[#1e293b] border sm:border-2 border-white dark:border-[#28292a] font-black text-[9px] sm:text-xs flex items-center justify-center shadow-sm ring-1 ring-slate-400/40">
                     2
                   </div>
-                  <div className="w-7 h-7 sm:w-13 sm:h-13 rounded-full mx-auto bg-[#e8f0fe] text-[#1a73e8] border border-[#c2e7ff] flex items-center justify-center text-[10px] sm:text-lg font-bold shadow-sm mb-1 sm:mb-2.5">
+                  <div className="w-7 h-7 sm:w-13 sm:h-13 rounded-full mx-auto bg-gradient-to-br from-[#f1f5f9] to-[#e2e8f0] text-[#334155] dark:text-[#e2e8f0] border-2 border-[#94a3b8] ring-2 ring-[#f1f5f9] dark:ring-[#334155]/50 flex items-center justify-center text-[10px] sm:text-lg font-bold shadow-sm mb-1 sm:mb-2.5">
                     {getInitials(topTwo["User Name"])}
                   </div>
                   <div className="font-extrabold text-[#1a73e8] dark:text-[#60a5fa] text-[10px] sm:text-sm truncate px-0.5" title={topTwo["User Name"]}>
@@ -429,18 +536,18 @@ export default function Home() {
                   <div className="text-[8.5px] sm:text-xs font-semibold text-[#5f6368] dark:text-[#9aa0a6] mt-0.5 sm:mt-1">
                     {(topTwo.badgesCompleted || 0) + (topTwo.gamesCompleted || 0)}/20 pts
                   </div>
-                  <div className="text-[8px] sm:text-[11px] font-bold text-[#202124] dark:text-[#e8eaed] mt-0.5 sm:mt-2">
+                  <div className="text-[8px] sm:text-[11px] font-bold text-slate-700 dark:text-slate-300 mt-0.5 sm:mt-2">
                     Level: Qualified
                   </div>
                 </div>
               )}
 
-              {/* Rank 1 (Center - Elevated) */}
-              <div className="order-2 relative bg-white dark:bg-[#28292a] rounded-xl sm:rounded-2xl p-2 sm:p-5 border-2 border-[#fbbc04]/60 dark:border-[#fbbc04]/40 shadow-md sm:shadow-xl hover:shadow-2xl transition-all duration-200 text-center -translate-y-1.5 sm:-translate-y-3">
-                <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#fef08a] to-[#eab308] text-[#713f12] border sm:border-2 border-white dark:border-[#28292a] font-black text-[10px] sm:text-sm flex items-center justify-center shadow-md">
+              {/* Rank 1 (Center - Elevated) - Gold Outline & Inner Shade */}
+              <div className="order-2 relative rounded-xl sm:rounded-2xl p-2 sm:p-5 border-2 border-[#f59e0b] dark:border-[#fbbf24] shadow-[inset_0_2px_16px_rgba(245,158,11,0.22)] dark:shadow-[inset_0_2px_18px_rgba(251,191,36,0.18)] bg-gradient-to-b from-[#fffdf0] via-white to-[#fffbf0] dark:from-[#352a14] dark:via-[#28292a] dark:to-[#28292a] shadow-lg sm:shadow-xl shadow-amber-500/15 hover:shadow-2xl hover:shadow-amber-500/25 transition-all duration-200 text-center -translate-y-1.5 sm:-translate-y-3">
+                <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#fde047] via-[#eab308] to-[#ca8a04] text-[#713f12] border sm:border-2 border-white dark:border-[#28292a] font-black text-[10px] sm:text-sm flex items-center justify-center shadow-md ring-1 ring-amber-400/50">
                   1
                 </div>
-                <div className="w-9 h-9 sm:w-16 sm:h-16 rounded-full mx-auto bg-[#fef3c7] text-[#b45309] border border-[#fde68a] flex items-center justify-center text-xs sm:text-xl font-black shadow-sm mb-1 sm:mb-2.5">
+                <div className="w-9 h-9 sm:w-16 sm:h-16 rounded-full mx-auto bg-gradient-to-br from-[#fef3c7] to-[#fde68a] text-[#b45309] border-2 border-[#f59e0b] ring-2 ring-[#fef3c7] dark:ring-[#78350f]/50 flex items-center justify-center text-xs sm:text-xl font-black shadow-sm mb-1 sm:mb-2.5">
                   {getInitials(topOne["User Name"])}
                 </div>
                 <div className="font-extrabold text-[#1a73e8] dark:text-[#60a5fa] text-[11px] sm:text-base truncate px-0.5" title={topOne["User Name"]}>
@@ -449,18 +556,18 @@ export default function Home() {
                 <div className="text-[9px] sm:text-xs font-semibold text-[#5f6368] dark:text-[#9aa0a6] mt-0.5 sm:mt-1">
                   {(topOne.badgesCompleted || 0) + (topOne.gamesCompleted || 0)}/20 pts
                 </div>
-                <div className="text-[8.5px] sm:text-xs font-bold text-[#202124] dark:text-[#e8eaed] mt-0.5 sm:mt-2">
+                <div className="text-[8.5px] sm:text-xs font-bold text-amber-700 dark:text-amber-300 mt-0.5 sm:mt-2">
                   Level: Qualified
                 </div>
               </div>
 
-              {/* Rank 3 (Right) */}
+              {/* Rank 3 (Right) - Bronze Outline & Inner Shade */}
               {topThreeUser && (
-                <div className="order-3 relative bg-white dark:bg-[#28292a] rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border border-[#e8eaed] dark:border-[#3c4043] shadow-sm sm:shadow-md hover:shadow-lg transition-all duration-200 text-center">
-                  <div className="absolute -top-1.5 -right-1.5 sm:-top-2.5 sm:-right-2.5 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#ffedd5] to-[#f97316] text-[#7c2d12] border sm:border-2 border-white dark:border-[#28292a] font-black text-[9px] sm:text-xs flex items-center justify-center shadow-sm">
+                <div className="order-3 relative rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border-2 border-[#ea580c] dark:border-[#f97316] shadow-[inset_0_2px_14px_rgba(234,88,12,0.18)] dark:shadow-[inset_0_2px_16px_rgba(249,115,22,0.15)] bg-gradient-to-b from-[#fff7ed] via-white to-[#ffedd5] dark:from-[#362319] dark:via-[#28292a] dark:to-[#28292a] shadow-md shadow-orange-500/10 hover:shadow-xl hover:shadow-orange-500/20 transition-all duration-200 text-center">
+                  <div className="absolute -top-1.5 -right-1.5 sm:-top-2.5 sm:-right-2.5 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#ffedd5] via-[#fb923c] to-[#ea580c] text-[#431407] border sm:border-2 border-white dark:border-[#28292a] font-black text-[9px] sm:text-xs flex items-center justify-center shadow-sm ring-1 ring-orange-400/40">
                     3
                   </div>
-                  <div className="w-7 h-7 sm:w-13 sm:h-13 rounded-full mx-auto bg-[#ffedd5] text-[#c2410c] border border-[#fed7aa] flex items-center justify-center text-[10px] sm:text-lg font-bold shadow-sm mb-1 sm:mb-2.5">
+                  <div className="w-7 h-7 sm:w-13 sm:h-13 rounded-full mx-auto bg-gradient-to-br from-[#ffedd5] to-[#fed7aa] text-[#9a3412] dark:text-[#ffedd5] border-2 border-[#ea580c] ring-2 ring-[#ffedd5] dark:ring-[#7c2d12]/50 flex items-center justify-center text-[10px] sm:text-lg font-bold shadow-sm mb-1 sm:mb-2.5">
                     {getInitials(topThreeUser["User Name"])}
                   </div>
                   <div className="font-extrabold text-[#1a73e8] dark:text-[#60a5fa] text-[10px] sm:text-sm truncate px-0.5" title={topThreeUser["User Name"]}>
@@ -469,7 +576,7 @@ export default function Home() {
                   <div className="text-[8.5px] sm:text-xs font-semibold text-[#5f6368] dark:text-[#9aa0a6] mt-0.5 sm:mt-1">
                     {(topThreeUser.badgesCompleted || 0) + (topThreeUser.gamesCompleted || 0)}/20 pts
                   </div>
-                  <div className="text-[8px] sm:text-[11px] font-bold text-[#202124] dark:text-[#e8eaed] mt-0.5 sm:mt-2">
+                  <div className="text-[8px] sm:text-[11px] font-bold text-orange-800 dark:text-orange-300 mt-0.5 sm:mt-2">
                     Level: Qualified
                   </div>
                 </div>
