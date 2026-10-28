@@ -72,6 +72,19 @@
   );
 }
 
+/* Google 4-Color Gradient Text */
+.google-gradient-text {
+  background: linear-gradient(
+    90deg,
+    #4285f4 0%,
+    #ea4335 30%,
+    #fbbc04 65%,
+    #34a853 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* Clean White Background with Google Color Spot Ambient Layer */
 .google-mesh-bg {
   background-color: #ffffff;
@@ -82,13 +95,37 @@
 }
 
 
-/* Floating ambient glow animation */
+/* GDGC Poster Graph Paper Grid Background (Subtle, Light & Clean) */
+.gdgc-graph-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(60, 64, 67, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(60, 64, 67, 0.035) 1px, transparent 1px);
+}
+
+.dark .gdgc-graph-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* Floating ambient motion animations */
 @keyframes ambientFloat {
   0%, 100% {
-    transform: translateY(0px) scale(1);
+    transform: translateY(0px) rotate(0deg);
   }
   50% {
-    transform: translateY(-20px) scale(1.05);
+    transform: translateY(-14px) rotate(1.5deg);
+  }
+}
+
+@keyframes ambientSpinSlow {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
   }
 }
 
@@ -98,6 +135,10 @@
 
 .animate-ambient-float-reverse {
   animation: ambientFloat 18s ease-in-out infinite reverse;
+}
+
+.animate-spin-slow {
+  animation: ambientSpinSlow 60s linear infinite;
 }
 
 
