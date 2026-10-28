@@ -1,7 +1,6 @@
-// Home.jsx - Google Material Design with White Card Boxes (Exact Screenshot Columns)
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Papa from "papaparse";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import {
@@ -15,6 +14,9 @@ import {
   FiUsers,
   FiTarget,
   FiCheckCircle,
+  FiExternalLink,
+  FiAward,
+  FiChevronDown,
 } from "react-icons/fi";
 import Logo from "./assets/logo.svg";
 
@@ -107,10 +109,277 @@ function CountUp({ value = 0, duration = 800, className = "" }) {
 }
 
 /* ==========================================================================
+   Participant Details Modal (Exact Screenshot & Highly Organised)
+   ========================================================================== */
+function ParticipantModal({ participant, onClose }) {
+  const [showBadges, setShowBadges] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [onClose]);
+
+  if (!participant) return null;
+
+  const isRedeemed = String(participant["Access Code Redemption Status"]).trim().toLowerCase() === "yes";
+  const isEligible = String(participant["All Skill Badges & Games Completed"]).trim().toLowerCase() === "yes";
+  const pct = clamp(Number(participant.percentage) || 0, 0, 100);
+  const profileUrl = participant["Google Cloud Skills Boost Profile URL"] || "";
+
+  // Badges list parsing
+  const skillBadgesList = (participant["Names of Completed Skill Badges"] || "")
+    .split("|")
+    .map((s) => s.trim().replace(/\[Skill Badge\]/gi, "").trim())
+    .filter(Boolean);
+
+  const arcadeGamesList = (participant["Names of Completed Arcade Games"] || "")
+    .split("|")
+    .map((s) => s.trim().replace(/\[Game\]/gi, "").trim())
+    .filter(Boolean);
+
+  const totalBadgesEarned = skillBadgesList.length + arcadeGamesList.length;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm transition-opacity"
+      />
+
+      {/* Modal Dialog Card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
+        className="relative z-10 w-full max-w-lg bg-white dark:bg-[#202124] rounded-2xl sm:rounded-3xl shadow-2xl border border-[#e8eaed] dark:border-[#3c4043] overflow-hidden my-auto max-h-[90vh] flex flex-col"
+      >
+        {/* Top 4-Color Accent Line */}
+        <div className="google-gradient-bar h-[3.5px] w-full flex-shrink-0" />
+
+        {/* Scrollable Content Container */}
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5">
+          {/* Header Bar: Badges + Close Button */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Rank Pill */}
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black shadow-xs ${
+                participant.rank === 1
+                  ? "bg-gradient-to-br from-[#fde047] to-[#eab308] text-[#713f12] ring-1 ring-amber-400"
+                  : participant.rank === 2
+                  ? "bg-gradient-to-br from-[#f8fafc] to-[#cbd5e1] text-[#1e293b] ring-1 ring-slate-400"
+                  : participant.rank === 3
+                  ? "bg-gradient-to-br from-[#fed7aa] to-[#fb923c] text-[#431407] ring-1 ring-orange-400"
+                  : "bg-[#e8f0fe] text-[#1a73e8] border border-[#c2e7ff] dark:bg-[#1c3829]/50 dark:text-[#8ab4f8] dark:border-[#29563c]"
+              }`}>
+                Rank #{participant.rank}
+              </span>
+
+              {/* Status Pill */}
+              {isEligible ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0] dark:bg-[#1c3829] dark:text-[#86efac] dark:border-[#29563c]">
+                  <FiCheck className="w-3.5 h-3.5 stroke-[3]" />
+                  Qualified
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">
+                  In Progress
+                </span>
+              )}
+            </div>
+
+            {/* Close Button */}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full text-[#5f6368] dark:text-[#9aa0a6] hover:bg-[#f1f3f4] dark:hover:bg-[#35373a] hover:text-[#202124] dark:hover:text-[#e8eaed] transition-colors"
+              aria-label="Close dialog"
+            >
+              <FiX className="w-5 h-5 stroke-[2.2]" />
+            </button>
+          </div>
+
+          {/* Participant Name & Email */}
+          <div className="pt-1">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[#202124] dark:text-[#e8eaed] tracking-tight">
+              {participant["User Name"] || "—"}
+            </h2>
+            <p className="text-xs sm:text-sm text-[#5f6368] dark:text-[#9aa0a6] font-medium mt-0.5">
+              {participant["User Email"] || ""}
+            </p>
+          </div>
+
+          {/* Main Card: Google Cloud Study Jams 2026 Completion */}
+          <div className="rounded-xl sm:rounded-2xl p-4 sm:p-5 bg-[#f8f9fa] dark:bg-[#28292a] border border-[#e8eaed] dark:border-[#3c4043] shadow-xs space-y-4">
+            <div className="flex items-center justify-between text-xs font-bold">
+              <span className="uppercase tracking-wider text-[#5f6368] dark:text-[#9aa0a6]">
+                Google Cloud Study Jams 2026 Completion
+              </span>
+              <span className="text-sm font-black text-[#1a73e8] dark:text-[#8ab4f8]">
+                {pct.toFixed(0)}%
+              </span>
+            </div>
+
+            {/* Gradient Progress Bar */}
+            <div className="w-full h-2.5 rounded-full overflow-hidden bg-[#e8eaed] dark:bg-[#3c4043]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#4285f4] via-[#34a853] to-[#34a853] transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+
+            {/* 3 Metrics: Badges | Arcade | Access Code */}
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#e8eaed]/70 dark:border-[#3c4043]/70 text-center">
+              <div>
+                <div className="text-[11px] text-[#5f6368] dark:text-[#9aa0a6] font-medium">Skill Badges</div>
+                <div className="text-sm sm:text-base font-extrabold text-[#202124] dark:text-[#e8eaed] mt-0.5">
+                  {participant.badgesCompleted ?? 0} <span className="text-xs font-normal text-[#5f6368] dark:text-[#9aa0a6]">/ 19</span>
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[11px] text-[#5f6368] dark:text-[#9aa0a6] font-medium">Arcade Games</div>
+                <div className="text-sm sm:text-base font-extrabold text-[#202124] dark:text-[#e8eaed] mt-0.5">
+                  {participant.gamesCompleted ?? 0} <span className="text-xs font-normal text-[#5f6368] dark:text-[#9aa0a6]">/ 1</span>
+                </div>
+              </div>
+
+              <div>
+                <div className="text-[11px] text-[#5f6368] dark:text-[#9aa0a6] font-medium">Access Code</div>
+                <div className="mt-0.5 flex items-center justify-center">
+                  {isRedeemed ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-[#15803d] dark:text-[#86efac]">
+                      <FiCheck className="w-3.5 h-3.5 stroke-[3]" />
+                      Redeemed
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-[#b91c1c] dark:text-[#fca5a5]">
+                      <FiX className="w-3.5 h-3.5 stroke-[3]" />
+                      Not Redeemed
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile Card */}
+          <div className="rounded-xl sm:rounded-2xl p-3.5 sm:p-4 bg-[#f8f9fa] dark:bg-[#28292a] border border-[#e8eaed] dark:border-[#3c4043] flex items-center justify-between gap-3 shadow-xs">
+            <div className="min-w-0 pr-1">
+              <div className="font-bold text-xs sm:text-sm text-[#202124] dark:text-[#e8eaed]">
+                Google Cloud Skills Boost
+              </div>
+              <div className="text-[11px] text-[#5f6368] dark:text-[#9aa0a6] truncate font-medium mt-0.5" title={profileUrl}>
+                {profileUrl ? profileUrl.replace(/^https?:\/\//, "") : "No public profile link provided"}
+              </div>
+            </div>
+
+            {profileUrl ? (
+              <a
+                href={profileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1a73e8] hover:bg-[#1557b0] text-white shadow-sm transition-all duration-150 flex-shrink-0 active:scale-95"
+              >
+                <span>View Profile</span>
+                <FiExternalLink className="w-3.5 h-3.5" />
+              </a>
+            ) : (
+              <span className="text-xs text-[#5f6368] dark:text-[#9aa0a6] italic px-2">
+                Unavailable
+              </span>
+            )}
+          </div>
+
+          {/* Organized Badge Details Breakdown */}
+          {totalBadgesEarned > 0 && (
+            <div className="rounded-xl sm:rounded-2xl border border-[#e8eaed] dark:border-[#3c4043] overflow-hidden bg-white dark:bg-[#242526]">
+              <button
+                type="button"
+                onClick={() => setShowBadges((v) => !v)}
+                className="w-full px-4 py-3 flex items-center justify-between text-xs font-bold text-[#202124] dark:text-[#e8eaed] hover:bg-[#f8f9fa] dark:hover:bg-[#28292a] transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <FiAward className="w-4 h-4 text-[#1a73e8] dark:text-[#8ab4f8]" />
+                  <span>Completed Badges & Games ({totalBadgesEarned})</span>
+                </div>
+                <FiChevronDown
+                  className={`w-4 h-4 text-[#5f6368] transition-transform duration-200 ${
+                    showBadges ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {showBadges && (
+                <div className="p-3.5 pt-0 max-h-56 overflow-y-auto space-y-2 border-t border-[#e8eaed] dark:border-[#3c4043]">
+                  {/* Skill Badges */}
+                  {skillBadgesList.length > 0 && (
+                    <div className="space-y-1 pt-2">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#5f6368] dark:text-[#9aa0a6]">
+                        Skill Badges ({skillBadgesList.length})
+                      </div>
+                      <div className="space-y-1">
+                        {skillBadgesList.map((badge, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-2 p-1.5 rounded-lg bg-[#f8f9fa] dark:bg-[#28292a] text-[11px] text-[#202124] dark:text-[#e8eaed]"
+                          >
+                            <span className="w-4 h-4 rounded-full bg-[#dcfce7] dark:bg-[#1c3829] text-[#15803d] dark:text-[#86efac] flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <FiCheck className="w-2.5 h-2.5 stroke-[3]" />
+                            </span>
+                            <span>{badge}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Arcade Games */}
+                  {arcadeGamesList.length > 0 && (
+                    <div className="space-y-1 pt-2">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#5f6368] dark:text-[#9aa0a6]">
+                        Arcade Games ({arcadeGamesList.length})
+                      </div>
+                      <div className="space-y-1">
+                        {arcadeGamesList.map((game, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-start gap-2 p-1.5 rounded-lg bg-[#f8f9fa] dark:bg-[#28292a] text-[11px] text-[#202124] dark:text-[#e8eaed]"
+                          >
+                            <span className="w-4 h-4 rounded-full bg-[#dcfce7] dark:bg-[#1c3829] text-[#15803d] dark:text-[#86efac] flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <FiCheck className="w-2.5 h-2.5 stroke-[3]" />
+                            </span>
+                            <span>{game}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ==========================================================================
    Plain White Leaderboard Box (Exact Content from Reference Screenshot)
    Columns: Rank | Name & Email | Access Code | Eligible | Badges | Arcade | Progress
    ========================================================================== */
-function LeaderboardBox({ row = {} }) {
+function LeaderboardBox({ row = {}, onSelect }) {
   const isRedeemed = String(row["Access Code Redemption Status"]).trim().toLowerCase() === "yes";
   const isEligible = String(row["All Skill Badges & Games Completed"]).trim().toLowerCase() === "yes";
   const pct = clamp(Number(row.percentage) || 0, 0, 100);
@@ -150,7 +419,9 @@ function LeaderboardBox({ row = {} }) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       layout
-      className={`w-full rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-4 ${rankTheme.box} shadow-sm sm:shadow-md hover:shadow-md sm:hover:shadow-lg transition-all duration-200`}
+      onClick={() => onSelect?.(row)}
+      title="Click to view participant details"
+      className={`w-full rounded-xl sm:rounded-2xl px-3 sm:px-6 py-2.5 sm:py-4 ${rankTheme.box} shadow-sm sm:shadow-md hover:shadow-md sm:hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.002] active:scale-[0.998]`}
     >
       {/* Desktop Grid Layout (Exact Match to User Screenshot) */}
       <div className="hidden md:grid grid-cols-12 items-center gap-3 text-xs sm:text-sm">
@@ -283,6 +554,9 @@ export default function Home() {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebounced(searchQuery, 200);
+
+  // Selected participant for popup modal
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
 
   // UI State
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -523,7 +797,13 @@ export default function Home() {
             <div className="mt-4 sm:mt-7 grid grid-cols-3 gap-2 sm:gap-5 max-w-[340px] sm:max-w-2xl mx-auto items-end pt-2 sm:pt-4 pb-1 sm:pb-2">
               {/* Rank 2 (Left) - Silver Outline & Inner Shade */}
               {topTwo && (
-                <div className="order-1 relative rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border-2 border-[#94a3b8] dark:border-[#94a3b8]/80 shadow-[inset_0_2px_14px_rgba(148,163,184,0.22)] dark:shadow-[inset_0_2px_16px_rgba(148,163,184,0.15)] bg-gradient-to-b from-[#f8fafc] via-white to-[#f1f5f9] dark:from-[#2c323d] dark:via-[#28292a] dark:to-[#28292a] shadow-md shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-200 text-center">
+                <div
+                  onClick={() => setSelectedParticipant(topTwo)}
+                  role="button"
+                  tabIndex={0}
+                  title={`Click to view ${topTwo["User Name"]}'s details`}
+                  className="order-1 relative rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border-2 border-[#94a3b8] dark:border-[#94a3b8]/80 shadow-[inset_0_2px_14px_rgba(148,163,184,0.22)] dark:shadow-[inset_0_2px_16px_rgba(148,163,184,0.15)] bg-gradient-to-b from-[#f8fafc] via-white to-[#f1f5f9] dark:from-[#2c323d] dark:via-[#28292a] dark:to-[#28292a] shadow-md shadow-slate-500/10 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-200 text-center cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                >
                   <div className="absolute -top-1.5 -right-1.5 sm:-top-2.5 sm:-right-2.5 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#f8fafc] via-[#cbd5e1] to-[#94a3b8] text-[#1e293b] border sm:border-2 border-white dark:border-[#28292a] font-black text-[9px] sm:text-xs flex items-center justify-center shadow-sm ring-1 ring-slate-400/40">
                     2
                   </div>
@@ -543,7 +823,13 @@ export default function Home() {
               )}
 
               {/* Rank 1 (Center - Elevated) - Gold Outline & Inner Shade */}
-              <div className="order-2 relative rounded-xl sm:rounded-2xl p-2 sm:p-5 border-2 border-[#f59e0b] dark:border-[#fbbf24] shadow-[inset_0_2px_16px_rgba(245,158,11,0.22)] dark:shadow-[inset_0_2px_18px_rgba(251,191,36,0.18)] bg-gradient-to-b from-[#fffdf0] via-white to-[#fffbf0] dark:from-[#352a14] dark:via-[#28292a] dark:to-[#28292a] shadow-lg sm:shadow-xl shadow-amber-500/15 hover:shadow-2xl hover:shadow-amber-500/25 transition-all duration-200 text-center -translate-y-1.5 sm:-translate-y-3">
+              <div
+                onClick={() => setSelectedParticipant(topOne)}
+                role="button"
+                tabIndex={0}
+                title={`Click to view ${topOne["User Name"]}'s details`}
+                className="order-2 relative rounded-xl sm:rounded-2xl p-2 sm:p-5 border-2 border-[#f59e0b] dark:border-[#fbbf24] shadow-[inset_0_2px_16px_rgba(245,158,11,0.22)] dark:shadow-[inset_0_2px_18px_rgba(251,191,36,0.18)] bg-gradient-to-b from-[#fffdf0] via-white to-[#fffbf0] dark:from-[#352a14] dark:via-[#28292a] dark:to-[#28292a] shadow-lg sm:shadow-xl shadow-amber-500/15 hover:shadow-2xl hover:shadow-amber-500/25 transition-all duration-200 text-center -translate-y-1.5 sm:-translate-y-3 cursor-pointer hover:scale-[1.03] active:scale-[0.98]"
+              >
                 <div className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-[#fde047] via-[#eab308] to-[#ca8a04] text-[#713f12] border sm:border-2 border-white dark:border-[#28292a] font-black text-[10px] sm:text-sm flex items-center justify-center shadow-md ring-1 ring-amber-400/50">
                   1
                 </div>
@@ -563,7 +849,13 @@ export default function Home() {
 
               {/* Rank 3 (Right) - Bronze Outline & Inner Shade */}
               {topThreeUser && (
-                <div className="order-3 relative rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border-2 border-[#ea580c] dark:border-[#f97316] shadow-[inset_0_2px_14px_rgba(234,88,12,0.18)] dark:shadow-[inset_0_2px_16px_rgba(249,115,22,0.15)] bg-gradient-to-b from-[#fff7ed] via-white to-[#ffedd5] dark:from-[#362319] dark:via-[#28292a] dark:to-[#28292a] shadow-md shadow-orange-500/10 hover:shadow-xl hover:shadow-orange-500/20 transition-all duration-200 text-center">
+                <div
+                  onClick={() => setSelectedParticipant(topThreeUser)}
+                  role="button"
+                  tabIndex={0}
+                  title={`Click to view ${topThreeUser["User Name"]}'s details`}
+                  className="order-3 relative rounded-xl sm:rounded-2xl p-1.5 sm:p-4 border-2 border-[#ea580c] dark:border-[#f97316] shadow-[inset_0_2px_14px_rgba(234,88,12,0.18)] dark:shadow-[inset_0_2px_16px_rgba(249,115,22,0.15)] bg-gradient-to-b from-[#fff7ed] via-white to-[#ffedd5] dark:from-[#362319] dark:via-[#28292a] dark:to-[#28292a] shadow-md shadow-orange-500/10 hover:shadow-xl hover:shadow-orange-500/20 transition-all duration-200 text-center cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                >
                   <div className="absolute -top-1.5 -right-1.5 sm:-top-2.5 sm:-right-2.5 w-5 h-5 sm:w-7 sm:h-7 rounded-full bg-gradient-to-br from-[#ffedd5] via-[#fb923c] to-[#ea580c] text-[#431407] border sm:border-2 border-white dark:border-[#28292a] font-black text-[9px] sm:text-xs flex items-center justify-center shadow-sm ring-1 ring-orange-400/40">
                     3
                   </div>
@@ -634,7 +926,11 @@ export default function Home() {
             </div>
           ) : (
             filtered.map((row) => (
-              <LeaderboardBox key={row["User Email"] || row.rank} row={row} />
+              <LeaderboardBox
+                key={row["User Email"] || row.rank}
+                row={row}
+                onSelect={setSelectedParticipant}
+              />
             ))
           )}
         </section>
@@ -689,6 +985,16 @@ export default function Home() {
           <FiChevronUp className="w-5 h-5 stroke-[2.5]" />
         </button>
       </div>
+
+      {/* Participant Details Modal Dialog */}
+      <AnimatePresence>
+        {selectedParticipant && (
+          <ParticipantModal
+            participant={selectedParticipant}
+            onClose={() => setSelectedParticipant(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
